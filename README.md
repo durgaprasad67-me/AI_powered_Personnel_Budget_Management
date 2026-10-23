@@ -40,7 +40,7 @@ If your MongoDB password was shared or committed previously, rotate it in MongoD
   2. Transaction creation rejects an amount of zero.
   3. Transaction creation rejects an unsupported transaction type.
   4. The transaction schema accepts a valid transaction.
-- Added `pytest` and `httpx` to `backend/requirements.txt`.
+- Added `pytest` and `httpx2` to `backend/requirements.txt`.
 - Removed zero-byte files from the delivered archive.
 - Excluded `.git/`, `.venv/`, Python cache files, and `backend/.env` from the archive to avoid bundling local environment files or secrets.
 

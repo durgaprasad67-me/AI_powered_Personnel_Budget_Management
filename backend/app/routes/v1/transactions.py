@@ -125,6 +125,9 @@ async def replace_transaction(transaction_id: str,transaction: TransactionCreate
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=TRANSACTION_NOT_FOUND,)
 
     updated = await transactions_collection.find_one({"_id": ObjectId(transaction_id)})
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=TRANSACTION_NOT_FOUND,)
+
     return serialize_transaction(updated)
 
 
