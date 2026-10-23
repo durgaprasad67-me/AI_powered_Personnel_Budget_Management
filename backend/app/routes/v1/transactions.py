@@ -16,12 +16,18 @@ NO_CHANGES_PROVIDED = "No changes provided"
 NULL_UPDATE_FIELDS = "Updated fields cannot be null"
 
 # Reusable HTTP response documentation
-INVALID_ID_RESPONSE = {400: {"description": INVALID_TRANSACTION_ID},}
-NOT_FOUND_RESPONSE = {404: {"description": TRANSACTION_NOT_FOUND},}
-TRANSACTION_ERROR_RESPONSES = {**INVALID_ID_RESPONSE,**NOT_FOUND_RESPONSE,}
-UPDATE_ERROR_RESPONSES = {400: {"description": "Invalid transaction ID or no changes provided"},
+INVALID_ID_RESPONSE: dict[int | str, dict[str, Any]] = {
+    400: {"description": INVALID_TRANSACTION_ID},
+}
+NOT_FOUND_RESPONSE: dict[int | str, dict[str, Any]] = {
     404: {"description": TRANSACTION_NOT_FOUND},
-    422: {"description": NULL_UPDATE_FIELDS},}
+}
+TRANSACTION_ERROR_RESPONSES = {**INVALID_ID_RESPONSE,**NOT_FOUND_RESPONSE,}
+UPDATE_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    400: {"description": "Invalid transaction ID or no changes provided"},
+    404: {"description": TRANSACTION_NOT_FOUND},
+    422: {"description": NULL_UPDATE_FIELDS},
+}
 
 
 # Convert MongoDB ObjectId into a JSON-compatible string
@@ -36,6 +42,12 @@ async def create_transaction(transaction: TransactionCreate):
     data = transaction.model_dump(mode="json")
     result = await transactions_collection.insert_one(data)
     saved = await transactions_collection.find_one({"_id": result.inserted_id})
+
+    if saved is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve created transaction",
+        )
 
     return serialize_transaction(saved)
 
@@ -93,6 +105,9 @@ async def update_transaction(transaction_id: str,updates: TransactionUpdate,):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail=TRANSACTION_NOT_FOUND,)
 
     updated = await transactions_collection.find_one({"_id": ObjectId(transaction_id)})
+
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TRANSACTION_NOT_FOUND)
 
     return serialize_transaction(updated)
 
