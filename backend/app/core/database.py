@@ -1,8 +1,8 @@
 import os
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
-from pymongo import AsyncMongoClient, ReturnDocument
-
+from pymongo import AsyncMongoClient
+from pymongo.errors import DuplicateKeyError
 load_dotenv()
 
 MONGO_USER = os.getenv("MONGO_USER")
@@ -19,26 +19,30 @@ password = quote_plus(MONGO_PASSWORD)
 MONGODB_URL = (f"mongodb+srv://{username}:{password}@{MONGO_CLUSTER}/""?retryWrites=true&w=majority")
 
 client = AsyncMongoClient(MONGODB_URL)
+
+#collection definitions
 database = client[DATABASE_NAME]
 transactions_collection = database["transactions"]
-
+budgets_collection = database["budgets"]
+financial_goals_collection = database["financial_goals"]
 counters_collection = database["counters"]
 
 
-async def next_sequence() -> int:
-    # Find the transaction with the highest ID.
-    last_transaction = await transactions_collection.find_one(
-        {},
-        projection={"_id": 1},
-        sort=[("_id", -1)],
-    )
-
-    # Start at 1 if no transactions exist.
-    if last_transaction is None:
-        return 1
-
-    # Otherwise, return the highest existing ID + 1.
-    return last_transaction["_id"] + 1
+async def insert_with_next_id(document: dict) -> int:
+    """Save a transaction with _id = highest number in use + 1 (1 when empty)."""
+    for _ in range(5):
+        last = await transactions_collection.find_one(
+            {"_id": {"$type": "number"}},  # ignore any old ObjectId records
+            projection={"_id": 1},
+            sort=[("_id", -1)],
+        )
+        document["_id"] = last["_id"] + 1 if last else 1
+        try:
+            await transactions_collection.insert_one(document)
+            return document["_id"]
+        except DuplicateKeyError:
+            continue  # another request took this number first, try the next
+    raise RuntimeError("Could not assign a transaction number, please retry")
 
 
 async def close_database():
