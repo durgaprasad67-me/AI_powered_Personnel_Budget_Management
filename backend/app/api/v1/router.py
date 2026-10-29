@@ -1,12 +1,17 @@
 from fastapi import APIRouter
+
 from app.api.v1.endpoints import (
-    rag,
-    insights as ai_insights,
     budgets,
     dashboard,
-    goals as financial_goals,
     health,
+    rag,
     transactions,
+)
+from app.api.v1.endpoints import (
+    goals as financial_goals,
+)
+from app.api.v1.endpoints import (
+    insights as ai_insights,
 )
 from app.api.v1.endpoints.imports import router as imports_router
 

@@ -1,8 +1,6 @@
 import re
 
 from app.domain.normalization import clean_lower, clean_spaces, normalize_type
-from app.domain.transaction_types import TYPE_ALIASES
-
 
 CATEGORY_KEYWORDS = {
     "food": "swiggy zomato restaurant cafe lunch dinner breakfast snack snacks biryani pizza burger tea coffee chai meal",

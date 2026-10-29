@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, status
 
 from app.api.deps import get_transaction_service
-from app.services.transactions import TransactionService
 from app.schemas.transactions import (
     TransactionCreate,
     TransactionUpdate,
 )
+from app.services.transactions import TransactionService
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 

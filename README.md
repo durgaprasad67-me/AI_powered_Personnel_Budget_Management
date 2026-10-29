@@ -7,12 +7,12 @@ AI-Powered Personal Finance & Spending Intelligence Platform.
 This cleaned copy keeps files with actual implementation or configuration, plus the new test and work-log files. Empty files and comment/docstring-only placeholders for unimplemented features were removed.
 
 - `backend/app/main.py` — FastAPI application and lifespan
-- `backend/app/core/database.py` — MongoDB Atlas connection
-- `backend/app/schemas/transaction.py` — transaction request schemas
-- `backend/app/routes/v1/transactions.py` — transaction CRUD and filtering
-- `backend/app/routes/v1/health.py` — health endpoint
-- `backend/app/routes/v1/dashboard.py` — monthly analytics summary
-- `backend/app/routes/v1/api.py` — route registration
+- `backend/app/db/client.py` — MongoDB Atlas connection
+- `backend/app/schemas/transactions.py` — transaction request schemas
+- `backend/app/api/v1/endpoints/transactions.py` — transaction CRUD and filtering
+- `backend/app/api/v1/endpoints/health.py` — health endpoint
+- `backend/app/api/v1/endpoints/dashboard.py` — monthly analytics summary
+- `backend/app/api/v1/router.py` — versioned route registration
 
 ## Run locally
 
@@ -26,6 +26,9 @@ python -m uvicorn app.main:app --reload
 ```
 
 API docs: `http://127.0.0.1:8000/docs`
+
+Versioned API endpoints are available under `/api/v1`; `/` and `/health` remain
+available at the root.
 
 If your MongoDB password was shared or committed previously, rotate it in MongoDB Atlas.
 

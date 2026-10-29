@@ -14,7 +14,6 @@ from app.domain.normalization import (
 )
 from app.domain.transaction_types import TransactionTypeName
 
-
 MAX_DESCRIPTION_LENGTH = 200
 MAX_CATEGORY_LENGTH = 50
 

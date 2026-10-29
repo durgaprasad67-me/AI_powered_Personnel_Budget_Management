@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.main import app
 from app.api.v1.endpoints.dashboard import build_summary
 from app.domain.dates import today_ist
+from app.main import app
 from app.schemas.transactions import TransactionCreate, TransactionUpdate
 
 client = TestClient(app)

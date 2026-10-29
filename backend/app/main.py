@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+
+from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.router import api_router
+from app.core.exceptions import InvalidInputError, NotFoundError
 from app.db.client import close_database, get_database
 from app.db.indexes import ensure_indexes
-from app.core.exceptions import InvalidInputError, NotFoundError
-from app.api.v1.router import api_router
-from app.api.v1.endpoints.health import router as health_router
 
 
 @asynccontextmanager

@@ -14,3 +14,9 @@ jobs:
       - run: python -m compileall backend/app
       - run: python -m pytest tests -v
         working-directory: backend
+      - run: python -c "import app.main"
+        working-directory: backend
+      - run: ruff check --select F,I,TID252 .
+        working-directory: backend
+      - run: lint-imports
+        working-directory: backend

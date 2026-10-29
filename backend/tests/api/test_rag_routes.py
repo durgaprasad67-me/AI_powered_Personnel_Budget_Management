@@ -1,6 +1,7 @@
+from unittest.mock import AsyncMock
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
 
 from app.api.v1.endpoints import rag
 

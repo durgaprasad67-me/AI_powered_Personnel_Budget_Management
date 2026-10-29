@@ -1,6 +1,8 @@
 from datetime import date as Date
 from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
 from app.schemas.types import Amount, UpdateDate
 
 GoalStatus = Literal["active","completed","paused","cancelled",]

@@ -1,18 +1,19 @@
 import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
-from app.core.config import get_settings
 from app.api.deps import get_analytics_service
+from app.core.config import get_settings
+from app.domain.dates import today_ist
 from app.schemas.ai_insights import (
     SpendingInsightRequest,
     SpendingInsightResponse,
     TransactionExtractionResponse,
     TransactionTextRequest,
 )
-from app.domain.dates import today_ist
 from app.services.analytics import AnalyticsService
 
 router = APIRouter(

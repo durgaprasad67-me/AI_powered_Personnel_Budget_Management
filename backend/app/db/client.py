@@ -3,7 +3,6 @@ from urllib.parse import quote_plus
 from pymongo import AsyncMongoClient
 
 from app.core.config import get_settings
-from app.repositories.transactions import insert_with_next_id as insert_transaction_with_next_id
 
 settings = get_settings()
 
@@ -28,11 +27,6 @@ def get_database():
 transactions_collection = database["transactions"]
 budgets_collection = database["budgets"]
 financial_goals_collection = database["financial_goals"]
-
-
-async def insert_with_next_id(document: dict) -> int:
-    """Compatibility wrapper for the legacy import route."""
-    return await insert_transaction_with_next_id(transactions_collection, document)
 
 
 async def close_database():

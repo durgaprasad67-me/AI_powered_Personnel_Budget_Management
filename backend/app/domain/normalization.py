@@ -1,8 +1,7 @@
 import re
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from app.domain.transaction_types import TYPE_ALIASES
-
 
 MAX_AMOUNT = 100_000_000
 CURRENCY_JUNK = re.compile(

@@ -1,6 +1,8 @@
 from datetime import date as Date
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from app.schemas.types import (Amount, Category, Description, TransactionType, UpdateDate)
+
+from app.schemas.types import Amount, Category, Description, TransactionType, UpdateDate
 
 
 # CATEGORY SPENDING

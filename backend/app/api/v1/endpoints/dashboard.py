@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_analytics_service
-from app.services.analytics import AnalyticsService, build_monthly_summary as build_summary
+from app.services.analytics import AnalyticsService, build_monthly_summary
 
+build_summary = build_monthly_summary
 
 router = APIRouter(tags=["Analytics"])
 

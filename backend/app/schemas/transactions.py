@@ -1,4 +1,5 @@
 from datetime import date as Date
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.categorization import fill_missing_fields
@@ -11,7 +12,6 @@ from app.schemas.types import (
     TransactionType,
     UpdateDate,
 )
-
 
 
 # CREATE TRANSACTION

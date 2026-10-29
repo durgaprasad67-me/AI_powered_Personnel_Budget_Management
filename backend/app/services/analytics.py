@@ -1,11 +1,11 @@
-from datetime import date as Date, timedelta
+from datetime import date as Date
+from datetime import timedelta
 from typing import Any
 
 from app.core.exceptions import InvalidInputError
 from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
 from app.repositories.analytics import AnalyticsRepository
 from app.schemas.ai_insights import CategorySpending, SpendingSummary
-
 
 SUPPORTED_TRANSACTION_TYPES = {
     "income",

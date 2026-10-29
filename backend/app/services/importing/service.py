@@ -5,7 +5,6 @@ from app.core.exceptions import InvalidInputError
 from app.repositories.transactions import TransactionRepository
 from app.services.importing.constants import (
     ALLOWED_EXTENSIONS,
-    MAX_FILE_SIZE,
     MAX_ROWS,
 )
 from app.services.importing.parsers.csv_parser import extract_csv

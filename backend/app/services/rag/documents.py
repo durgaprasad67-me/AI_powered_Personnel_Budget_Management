@@ -2,15 +2,14 @@ from pathlib import Path
 
 from langchain_community.document_loaders import (
     CSVLoader,
+    Docx2txtLoader,
     PyMuPDFLoader,
     TextLoader,
-    Docx2txtLoader,
 )
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.integrations.vector_store import add_documents
-
 
 SUPPORTED_EXTENSIONS = {
     ".pdf",

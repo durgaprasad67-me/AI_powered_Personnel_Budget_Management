@@ -8,7 +8,6 @@ from app.schemas.financial_goals import (
 )
 from app.services.goals import GoalService
 
-
 router = APIRouter(
     prefix="/financial-goals",
     tags=["Financial Goals"],

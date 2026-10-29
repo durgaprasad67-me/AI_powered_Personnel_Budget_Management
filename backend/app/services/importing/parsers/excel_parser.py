@@ -6,10 +6,9 @@ Uses the first worksheet and treats its first non-empty row
 as the header row.
 """
 
+import math
 from datetime import date, datetime
 from io import BytesIO
-import math
-from pathlib import Path
 from typing import Any, Literal, cast
 
 import openpyxl

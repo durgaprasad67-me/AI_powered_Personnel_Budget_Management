@@ -4,7 +4,6 @@ from app.api.deps import get_budget_service
 from app.schemas.budgets import BudgetCreate, BudgetProgress, BudgetUpdate
 from app.services.budgets import BudgetService
 
-
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
 
