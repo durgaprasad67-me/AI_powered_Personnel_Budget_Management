@@ -9,7 +9,7 @@ from langchain_community.document_loaders import (
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.services.retrieval_service import add_documents
+from app.integrations.vector_store import add_documents
 
 
 SUPPORTED_EXTENSIONS = {
@@ -83,16 +83,20 @@ def split_documents(
 
 def index_document(
     file_path: str | Path,
+    source_filename: str | None = None,
 ) -> dict[str, int | str]:
     """
     Load a document, split it into chunks, and index the chunks
     in ChromaDB.
     """
     documents = load_document(file_path)
+    if source_filename:
+        for document in documents:
+            document.metadata["source"] = source_filename
 
     if not documents:
         return {
-            "filename": Path(file_path).name,
+            "filename": source_filename or Path(file_path).name,
             "chunks_created": 0,
         }
 
@@ -100,7 +104,7 @@ def index_document(
 
     if not chunks:
         return {
-            "filename": Path(file_path).name,
+            "filename": source_filename or Path(file_path).name,
             "chunks_created": 0,
         }
 

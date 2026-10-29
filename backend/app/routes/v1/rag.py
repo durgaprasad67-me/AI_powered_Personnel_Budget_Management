@@ -1,8 +1,9 @@
 import logging
-import aiofiles
+import tempfile
 from pathlib import Path
 from typing import Annotated
 
+import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
@@ -11,8 +12,8 @@ from app.schemas.rag import (
     RAGAnswerResponse,
     RAGQuestionRequest,
 )
-from app.services.ai_service import answer_with_rag
-from app.services.document_service import (
+from app.services.rag.answering import answer_with_rag
+from app.services.rag.documents import (
     MAX_DOCUMENT_SIZE,
     SUPPORTED_EXTENSIONS,
     index_document,
@@ -44,8 +45,13 @@ async def index_knowledge_document(
     size = 0
 
     try:
-        async with aiofiles.open("temp_file", "wb") as temp_file:
-            temp_path = Path(str(temp_file.name))
+        with tempfile.NamedTemporaryFile(
+            suffix=extension,
+            delete=False,
+        ) as temp_file:
+            temp_path = Path(temp_file.name)
+
+        async with aiofiles.open(temp_path, "wb") as temp_file:
             while True:
                 chunk = await file.read(1024 * 1024)
                 if not chunk:
@@ -64,7 +70,11 @@ async def index_knowledge_document(
                 detail="Uploaded document is empty.",
             )
 
-        result = await run_in_threadpool(index_document, temp_path)
+        result = await run_in_threadpool(
+            index_document,
+            temp_path,
+            filename,
+        )
         return DocumentIndexResponse(
             filename=filename,
             chunks_created=int(result["chunks_created"]),

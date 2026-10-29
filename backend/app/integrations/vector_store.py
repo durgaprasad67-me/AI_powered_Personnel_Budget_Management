@@ -2,30 +2,15 @@ from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from pydantic import SecretStr
 
 from app.core.config import get_settings
+from app.integrations.llm import get_embedding_model
 
 settings = get_settings()
 VECTOR_DB_PATH = Path(settings.chroma_persist_directory)
 COLLECTION_NAME = settings.chroma_collection_name
 
 _vector_store: Chroma | None = None
-
-
-def get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    """Create the embedding model used for document retrieval."""
-    settings = get_settings()
-    api_key = settings.gemini_api_key
-
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
-
-    return GoogleGenerativeAIEmbeddings(
-        model=settings.gemini_embedding_model,
-        api_key=SecretStr(api_key),
-    )
 
 
 def get_vector_store() -> Chroma:
@@ -37,7 +22,7 @@ def get_vector_store() -> Chroma:
 
         _vector_store = Chroma(
             collection_name=COLLECTION_NAME,
-            embedding_function=get_embeddings(),
+            embedding_function=get_embedding_model(),
             persist_directory=str(VECTOR_DB_PATH),
         )
 

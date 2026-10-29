@@ -3,23 +3,13 @@ from typing import Any
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.core.config import get_settings
-from app.services.retrieval_service import retrieve_documents
+from app.integrations.llm import get_chat_model
+from app.integrations.vector_store import retrieve_documents
 
 
 def get_llm() -> ChatGoogleGenerativeAI:
     """Create the Gemini chat model through LangChain."""
-    settings = get_settings()
-    api_key = settings.gemini_api_key
-
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
-
-    return ChatGoogleGenerativeAI(
-        model=settings.gemini_model,
-        google_api_key=api_key,
-        temperature=0.2,
-    )
+    return get_chat_model()
 
 
 async def generate_response(

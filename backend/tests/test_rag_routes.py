@@ -29,7 +29,10 @@ def test_ask_rag_rejects_short_question():
 def test_index_document_calls_indexer(monkeypatch):
     monkeypatch.setattr(
         rag, "index_document",
-        lambda path: {"filename": path.name, "chunks_created": 2},
+        lambda path, source_filename=None: {
+            "filename": source_filename or path.name,
+            "chunks_created": 2,
+        },
     )
     response = client.post(
         "/ai/rag/documents",
