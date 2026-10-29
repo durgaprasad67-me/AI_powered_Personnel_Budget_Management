@@ -1,22 +1,19 @@
 import json
-from datetime import date as Date
-
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
 from app.core.config import get_settings
-from app.core.database import transactions_collection
+from app.api.deps import get_analytics_service
 from app.schemas.ai_insights import (
-    CategorySpending,
     SpendingInsightRequest,
     SpendingInsightResponse,
-    SpendingSummary,
     TransactionExtractionResponse,
     TransactionTextRequest,
 )
 from app.domain.dates import today_ist
+from app.services.analytics import AnalyticsService
 
 router = APIRouter(
     prefix="/ai",
@@ -47,99 +44,6 @@ def get_llm_client():
 
 
 
-# BUILD FINANCIAL SUMMARY USING PYTHON
-
-
-async def build_spending_summary(
-    start_date: Date,
-    end_date: Date,
-) -> SpendingSummary:
-    """
-    Calculate financial totals from MongoDB.
-
-    The LLM receives these calculated values rather than
-    calculating authoritative financial totals itself.
-    """
-    if start_date > end_date:
-        raise HTTPException(
-            status_code=422,
-            detail="start_date must not be after end_date.",
-        )
-
-    match = {
-        "date": {
-            "$gte": start_date.isoformat(),
-            "$lte": end_date.isoformat(),
-        }
-    }
-
-    pipeline = [
-        {"$match": match},
-        {
-            "$group": {
-                "_id": {
-                    "type": "$transaction_type",
-                    "category": "$category",
-                },
-                "total": {"$sum": "$amount"},
-                "count": {"$sum": 1},
-            }
-        },
-    ]
-
-    cursor = await transactions_collection.aggregate(pipeline)
-    rows = await cursor.to_list(length=None)
-
-    totals = {
-        "income": 0.0,
-        "expense": 0.0,
-        "investment": 0.0,
-        "loan_repaid": 0.0,
-    }
-
-    categories = {}
-
-    for row in rows:
-        kind = row["_id"]["type"]
-        category = row["_id"]["category"]
-        total = float(row["total"])
-
-        if kind in totals:
-            totals[kind] += total
-
-        if kind == "expense":
-            entry = categories.setdefault(
-                category,
-                {"amount": 0.0, "count": 0},
-            )
-            entry["amount"] += total
-            entry["count"] += row["count"]
-
-    category_breakdown = [
-        CategorySpending(
-            category=cat,
-            total_amount=round(values["amount"], 2),
-            transaction_count=values["count"],
-        )
-        for cat, values in sorted(
-            categories.items(),
-            key=lambda item: item[1]["amount"],
-            reverse=True,
-        )
-    ]
-
-    return SpendingSummary(
-        start_date=start_date,
-        end_date=end_date,
-        total_income=round(totals["income"], 2),
-        total_expenses=round(totals["expense"], 2),
-        total_investments=round(totals["investment"], 2),
-        total_loan_repayments=round(totals["loan_repaid"], 2),
-        category_breakdown=category_breakdown,
-    )
-
-
-
 # GENERATE FINANCIAL INSIGHTS
 
 
@@ -149,6 +53,7 @@ async def build_spending_summary(
 )
 async def generate_spending_insights(
     request: SpendingInsightRequest,
+    analytics: AnalyticsService = Depends(get_analytics_service),
 ):
     """
     Generate explanations and recommendations based on
@@ -165,7 +70,7 @@ async def generate_spending_insights(
             detail="start_date must not be after end_date.",
         )
 
-    summary = await build_spending_summary(
+    summary = await analytics.spending_summary(
         start_date,
         end_date,
     )
