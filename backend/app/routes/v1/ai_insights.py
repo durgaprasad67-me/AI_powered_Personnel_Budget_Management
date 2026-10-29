@@ -1,11 +1,12 @@
 import json
 import os
 from datetime import date as Date
+
 from fastapi import APIRouter, HTTPException, status
-from httpx import request
-from openai import AsyncOpenAI
+from google import genai
+from google.genai import types
 from pydantic import ValidationError
-from app.schemas.common import today_ist
+
 from app.core.database import transactions_collection
 from app.schemas.ai_insights import (
     CategorySpending,
@@ -15,27 +16,28 @@ from app.schemas.ai_insights import (
     TransactionExtractionResponse,
     TransactionTextRequest,
 )
+from app.schemas.common import today_ist
 
 router = APIRouter(
     prefix="/ai",
     tags=["AI Financial Insights"],
 )
 
+# GEMINI CONFIGURATION
 
 
-# LLM CONFIGURATION
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 client = (
-    AsyncOpenAI(api_key=OPENAI_API_KEY)
-    if OPENAI_API_KEY
+    genai.Client(api_key=GEMINI_API_KEY)
+    if GEMINI_API_KEY
     else None
 )
 
 
-def get_llm_client() -> AsyncOpenAI:
-    """Return the configured LLM client."""
+def get_llm_client():
+    """Return the configured Gemini client."""
     if client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -46,7 +48,12 @@ def get_llm_client() -> AsyncOpenAI:
 
 
 # BUILD FINANCIAL SUMMARY USING PYTHON
-async def build_spending_summary(start_date: Date,end_date: Date,) -> SpendingSummary:
+
+
+async def build_spending_summary(
+    start_date: Date,
+    end_date: Date,
+) -> SpendingSummary:
     """
     Calculate financial totals from MongoDB.
 
@@ -100,7 +107,6 @@ async def build_spending_summary(start_date: Date,end_date: Date,) -> SpendingSu
         if kind in totals:
             totals[kind] += total
 
-        # Only expenses count toward this spending breakdown.
         if kind == "expense":
             entry = categories.setdefault(
                 category,
@@ -135,15 +141,21 @@ async def build_spending_summary(start_date: Date,end_date: Date,) -> SpendingSu
 
 
 # GENERATE FINANCIAL INSIGHTS
-@router.post("/spending-insights", response_model=SpendingInsightResponse)
-async def generate_spending_insights(request: SpendingInsightRequest):
+
+
+@router.post(
+    "/spending-insights",
+    response_model=SpendingInsightResponse,
+)
+async def generate_spending_insights(
+    request: SpendingInsightRequest,
+):
     """
     Generate explanations and recommendations based on
     actual transaction data.
     """
     today = today_ist()
 
-    # Default to the current calendar month.
     start_date = request.start_date or today.replace(day=1)
     end_date = request.end_date or today
 
@@ -153,7 +165,11 @@ async def generate_spending_insights(request: SpendingInsightRequest):
             detail="start_date must not be after end_date.",
         )
 
-    summary = await build_spending_summary(start_date, end_date)
+    summary = await build_spending_summary(
+        start_date,
+        end_date,
+    )
+
     llm = get_llm_client()
 
     system_prompt = """
@@ -185,23 +201,20 @@ Rules:
     }
 
     try:
-        response = await llm.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": json.dumps(payload),
-                },
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.2,
+        response = await llm.aio.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=(
+                f"{system_prompt}\n\n"
+                "Financial analysis request:\n"
+                f"{json.dumps(payload, default=str)}"
+            ),
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            ),
         )
 
-        content = response.choices[0].message.content
+        content = response.text
 
         if not content:
             raise ValueError("The AI returned an empty response.")
@@ -218,13 +231,14 @@ Rules:
             status_code=502,
             detail="The AI returned an invalid response structure.",
         ) from exc
+
     except ValueError as exc:
         raise HTTPException(
             status_code=502,
             detail="The AI returned an empty or invalid response.",
         ) from exc
+
     except Exception as exc:
-        # Log the exception in your application's logging system.
         raise HTTPException(
             status_code=502,
             detail="Unable to generate financial insights.",
@@ -233,8 +247,14 @@ Rules:
 
 
 # NATURAL-LANGUAGE TRANSACTION EXTRACTION
-@router.post("/extract-transaction", response_model=TransactionExtractionResponse,)
-async def extract_transaction(request: TransactionTextRequest):
+
+@router.post(
+    "/extract-transaction",
+    response_model=TransactionExtractionResponse,
+)
+async def extract_transaction(
+    request: TransactionTextRequest,
+):
     """
     Convert a natural-language transaction description into
     a candidate transaction for user review.
@@ -262,36 +282,29 @@ Rules:
 8. Set requires_confirmation to true.
 9. Return JSON only, matching the requested fields.
 10. If the amount or transaction type is ambiguous, do not
-    fabricate certainty. This endpoint expects a usable candidate;
-    ambiguous input should be clarified by the application.
+    fabricate certainty. Ambiguous input should be clarified.
 """
 
     try:
-        response = await llm.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": request.text,
-                },
-            ],
-            response_format={"type": "json_object"},
-            temperature=0,
+        response = await llm.aio.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=(
+                f"{system_prompt}\n\n"
+                f"User transaction text:\n{request.text}"
+            ),
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0,
+            ),
         )
 
-        content = response.choices[0].message.content
+        content = response.text
 
         if not content:
             raise ValueError("The AI returned an empty response.")
 
         candidate = TransactionExtractionResponse.model_validate_json(content)
 
-        # The client must review and confirm this candidate
-        # before it is saved as a financial transaction.
         candidate.requires_confirmation = True
 
         return candidate
@@ -301,11 +314,13 @@ Rules:
             status_code=502,
             detail="The AI returned invalid transaction fields.",
         ) from exc
+
     except ValueError as exc:
         raise HTTPException(
             status_code=502,
             detail="The AI returned an empty or invalid response.",
         ) from exc
+
     except Exception as exc:
         raise HTTPException(
             status_code=502,

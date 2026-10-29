@@ -2,3 +2,9 @@ fastapi==0.159.1
 uvicorn[standard]==0.54.0
 pymongo==4.19.0
 python-dotenv==1.2.4
+python-multipart
+PyMuPDF
+python-docx
+openpyxl
+xlrd
+aiofiles==25.1.0
