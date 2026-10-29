@@ -4,7 +4,8 @@ from fastapi.responses import JSONResponse
 from app.db.client import close_database, get_database
 from app.db.indexes import ensure_indexes
 from app.core.exceptions import InvalidInputError, NotFoundError
-from app.routes.v1.api import api_router
+from app.api.v1.router import api_router
+from app.api.v1.endpoints.health import router as health_router
 
 
 @asynccontextmanager
@@ -42,4 +43,5 @@ async def home():
     }
 
 
+app.include_router(health_router)
 app.include_router(api_router)
