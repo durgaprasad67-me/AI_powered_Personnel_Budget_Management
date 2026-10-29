@@ -25,7 +25,6 @@ database = client[DATABASE_NAME]
 transactions_collection = database["transactions"]
 budgets_collection = database["budgets"]
 financial_goals_collection = database["financial_goals"]
-counters_collection = database["counters"]
 
 
 async def insert_with_next_id(document: dict) -> int:
