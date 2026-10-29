@@ -115,7 +115,7 @@ TYPE_HINTS = {
 WORDS = re.compile(r"[a-z]+", re.IGNORECASE)
 
 CURRENCY_JUNK = re.compile(
-    r"₹|[$€£,]|\b(?:rs\.?|inr)\b|\s+",
+    r"₹|[$€£,]|\b(?:rs\.?|inr)(?=\s|[0-9]|$)|\s+",
     re.IGNORECASE,
 )
 

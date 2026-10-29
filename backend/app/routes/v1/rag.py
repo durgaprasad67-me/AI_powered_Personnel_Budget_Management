@@ -6,13 +6,13 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
-from ...schemas.rag import (
+from app.schemas.rag import (
     DocumentIndexResponse,
     RAGAnswerResponse,
     RAGQuestionRequest,
 )
-from ...services.ai_service import answer_with_rag
-from ...services.document_service import (
+from app.services.ai_service import answer_with_rag
+from app.services.document_service import (
     MAX_DOCUMENT_SIZE,
     SUPPORTED_EXTENSIONS,
     index_document,
