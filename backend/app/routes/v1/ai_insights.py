@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import date as Date
 
 from fastapi import APIRouter, HTTPException, status
@@ -7,6 +6,7 @@ from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
+from app.core.config import get_settings
 from app.core.database import transactions_collection
 from app.schemas.ai_insights import (
     CategorySpending,
@@ -26,12 +26,12 @@ router = APIRouter(
 # GEMINI CONFIGURATION
 
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+settings = get_settings()
+GEMINI_MODEL = settings.gemini_model
 
 client = (
-    genai.Client(api_key=GEMINI_API_KEY)
-    if GEMINI_API_KEY
+    genai.Client(api_key=settings.gemini_api_key)
+    if settings.gemini_api_key
     else None
 )
 

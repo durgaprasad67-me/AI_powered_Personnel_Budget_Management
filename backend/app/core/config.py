@@ -1,10 +1,25 @@
-import os
-from dotenv import load_dotenv
+from functools import lru_cache
 
-# Loads backend/.env when running from the backend directory.
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_CLUSTER = os.getenv("MONGO_CLUSTER")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "finsight_db")
+
+class Settings(BaseSettings):
+    mongo_user: str | None = None
+    mongo_password: str | None = None
+    mongo_cluster: str | None = None
+    database_name: str = "finsight_db"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"
+    chroma_persist_directory: str = "./chroma_db"
+    chroma_collection_name: str = "finsight_knowledge"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

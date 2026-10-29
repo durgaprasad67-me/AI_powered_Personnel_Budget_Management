@@ -1,11 +1,4 @@
-import os
 from datetime import date, timedelta
-
-# Set harmless defaults before importing the app so tests can run without
-# real MongoDB credentials. No test in this file opens a database connection.
-os.environ.setdefault("MONGO_USER", "test_user")
-os.environ.setdefault("MONGO_PASSWORD", "test_password")
-os.environ.setdefault("MONGO_CLUSTER", "localhost")
 
 import pytest
 from fastapi.testclient import TestClient

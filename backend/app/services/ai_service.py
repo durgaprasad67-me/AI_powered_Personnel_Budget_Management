@@ -1,26 +1,22 @@
-import os
 from typing import Any
 
-from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from app.core.config import get_settings
 from app.services.retrieval_service import retrieve_documents
-
-load_dotenv()
-
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 def get_llm() -> ChatGoogleGenerativeAI:
     """Create the Gemini chat model through LangChain."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    settings = get_settings()
+    api_key = settings.gemini_api_key
 
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
 
     return ChatGoogleGenerativeAI(
-        model=GEMINI_MODEL,
+        model=settings.gemini_model,
         google_api_key=api_key,
         temperature=0.2,
     )

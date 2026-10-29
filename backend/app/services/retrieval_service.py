@@ -1,38 +1,29 @@
-import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pydantic import SecretStr
 
-load_dotenv()
+from app.core.config import get_settings
 
-VECTOR_DB_PATH = Path(
-    os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
-)
-
-COLLECTION_NAME = os.getenv(
-    "CHROMA_COLLECTION_NAME",
-    "finsight_knowledge",
-)
+settings = get_settings()
+VECTOR_DB_PATH = Path(settings.chroma_persist_directory)
+COLLECTION_NAME = settings.chroma_collection_name
 
 _vector_store: Chroma | None = None
 
 
 def get_embeddings() -> GoogleGenerativeAIEmbeddings:
     """Create the embedding model used for document retrieval."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    settings = get_settings()
+    api_key = settings.gemini_api_key
 
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
 
     return GoogleGenerativeAIEmbeddings(
-        model=os.getenv(
-            "GEMINI_EMBEDDING_MODEL",
-            "gemini-embedding-001",
-        ),
+        model=settings.gemini_embedding_model,
         api_key=SecretStr(api_key),
     )
 

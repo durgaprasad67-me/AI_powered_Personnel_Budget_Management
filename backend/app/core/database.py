@@ -1,27 +1,24 @@
-import os
 from urllib.parse import quote_plus
-from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 from pymongo.errors import DuplicateKeyError
-load_dotenv()
+from app.core.config import get_settings
 
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_CLUSTER = os.getenv("MONGO_CLUSTER")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "finsight_db")
+settings = get_settings()
 
-if not MONGO_USER or not MONGO_PASSWORD or not MONGO_CLUSTER:
-    raise RuntimeError("Set MONGO_USER, MONGO_PASSWORD, and MONGO_CLUSTER in .env")
-
-# Encode credentials in case the password contains URL-reserved characters.
-username = quote_plus(MONGO_USER)
-password = quote_plus(MONGO_PASSWORD)
-MONGODB_URL = (f"mongodb+srv://{username}:{password}@{MONGO_CLUSTER}/""?retryWrites=true&w=majority")
+if settings.mongo_user and settings.mongo_password and settings.mongo_cluster:
+    username = quote_plus(settings.mongo_user)
+    password = quote_plus(settings.mongo_password)
+    MONGODB_URL = (
+        f"mongodb+srv://{username}:{password}@{settings.mongo_cluster}/"
+        "?retryWrites=true&w=majority"
+    )
+else:
+    MONGODB_URL = "mongodb://localhost:27017"
 
 client = AsyncMongoClient(MONGODB_URL)
 
 #collection definitions
-database = client[DATABASE_NAME]
+database = client[settings.database_name]
 transactions_collection = database["transactions"]
 budgets_collection = database["budgets"]
 financial_goals_collection = database["financial_goals"]
