@@ -30,7 +30,7 @@ async def not_found_handler(request, exc: NotFoundError):
 
 @app.exception_handler(InvalidInputError)
 async def invalid_input_handler(request, exc: InvalidInputError):
-    return JSONResponse(status_code=exc.status_code, content={"detail": str(exc)})
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 @app.get("/")

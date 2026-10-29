@@ -14,6 +14,10 @@ def get_transaction_service() -> TransactionService:
     return TransactionService(TransactionRepository(transactions_collection))
 
 
+def get_transaction_repository() -> TransactionRepository:
+    return TransactionRepository(transactions_collection)
+
+
 def get_budget_service() -> BudgetService:
     return BudgetService(BudgetRepository(budgets_collection, transactions_collection))
 

@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from app.routes.v1.imports.normalizers import normalize_transaction_row
+from app.services.importing.normalizers import normalize_transaction_row
 from app.schemas.transactions import TransactionCreate
 
 
