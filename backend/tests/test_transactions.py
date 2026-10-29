@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.main import app
-from app.routes.v1.dashboard import build_summary
+from app.api.v1.endpoints.dashboard import build_summary
 from app.domain.dates import today_ist
 from app.schemas.transactions import TransactionCreate, TransactionUpdate
 
@@ -35,7 +35,7 @@ def test_home_endpoint_returns_welcome_message():
 
 def test_create_transaction_rejects_non_positive_amount():
     response = client.post(
-        "/transactions",
+        "/api/v1/transactions",
         json={
             "amount": 0,
             "transaction_type": "expense",
@@ -50,7 +50,7 @@ def test_create_transaction_rejects_non_positive_amount():
 
 def test_create_transaction_rejects_invalid_transaction_type():
     response = client.post(
-        "/transactions",
+        "/api/v1/transactions",
         json={
             "amount": 100,
             "transaction_type": "transfer",
@@ -64,7 +64,7 @@ def test_create_transaction_rejects_invalid_transaction_type():
 
 
 def test_create_transaction_rejects_missing_amount():
-    response = client.post("/transactions", json={"description": "Lunch"})
+    response = client.post("/api/v1/transactions", json={"description": "Lunch"})
 
     assert response.status_code == 422
 
@@ -239,7 +239,7 @@ def test_bare_loan_type_is_rejected_because_it_is_ambiguous():
 
 
 def test_filter_rejects_unknown_transaction_type():
-    response = client.get("/transactions", params={"transaction_type": "loan"})
+    response = client.get("/api/v1/transactions", params={"transaction_type": "loan"})
 
     assert response.status_code == 422
 

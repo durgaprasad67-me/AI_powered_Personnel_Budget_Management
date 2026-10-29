@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 
-from app.routes.v1 import rag
+from app.api.v1.endpoints import rag
 
 app = FastAPI()
 app.include_router(rag.router)
