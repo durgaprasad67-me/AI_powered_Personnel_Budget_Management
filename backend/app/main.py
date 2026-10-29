@@ -1,14 +1,14 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from app.core.database import close_database, transactions_collection
+from app.db.client import close_database, get_database
+from app.db.indexes import ensure_indexes
 from app.routes.v1.api import api_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await transactions_collection.database.command("ping")
-    await transactions_collection.create_index([("date", -1), ("_id", -1)])
-    await transactions_collection.create_index([("category", 1), ("date", -1), ("_id", -1)])
+    await get_database().command("ping")
+    await ensure_indexes()
     yield
     await close_database()
 
