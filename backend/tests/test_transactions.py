@@ -6,7 +6,8 @@ from pydantic import ValidationError
 
 from app.main import app
 from app.routes.v1.dashboard import build_summary
-from app.schemas.transactions import TransactionCreate, TransactionUpdate, today_ist
+from app.domain.dates import today_ist
+from app.schemas.transactions import TransactionCreate, TransactionUpdate
 
 client = TestClient(app)
 

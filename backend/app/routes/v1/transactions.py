@@ -6,7 +6,8 @@ from app.core.database import (
     insert_with_next_id,
     transactions_collection,
 )
-from app.schemas.common import TRANSACTION_TYPES, clean_lower, normalize_type
+from app.domain.normalization import clean_lower, normalize_type
+from app.domain.transaction_types import TRANSACTION_TYPES
 from app.schemas.transactions import (
     TransactionCreate,
     TransactionUpdate,

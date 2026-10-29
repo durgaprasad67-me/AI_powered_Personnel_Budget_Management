@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from app.core.database import transactions_collection
-from app.schemas.common import CASH_IN_TYPES, CASH_OUT_TYPES
+from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
 
 router = APIRouter(tags=["Analytics"])
 

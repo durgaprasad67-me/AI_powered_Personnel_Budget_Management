@@ -1,0 +1,53 @@
+from typing import Literal, get_args
+
+
+TransactionTypeName = Literal[
+    "income",
+    "expense",
+    "investment",
+    "investment_return",
+    "loan_taken",
+    "loan_repaid",
+    "loan_given",
+    "loan_collected",
+]
+TRANSACTION_TYPES = get_args(TransactionTypeName)
+CASH_IN_TYPES = ("income", "investment_return", "loan_taken", "loan_collected")
+CASH_OUT_TYPES = ("expense", "investment", "loan_repaid", "loan_given")
+
+TYPE_ALIASES = {
+    "income": "income",
+    "credit": "income",
+    "credited": "income",
+    "cr": "income",
+    "received": "income",
+    "deposit": "income",
+    "salary": "income",
+    "expense": "expense",
+    "debit": "expense",
+    "debited": "expense",
+    "dr": "expense",
+    "spent": "expense",
+    "paid": "expense",
+    "withdrawal": "expense",
+    "invest": "investment",
+    "invested": "investment",
+    "investment": "investment",
+    "sip": "investment",
+    "redeemed": "investment_return",
+    "redemption": "investment_return",
+    "maturity": "investment_return",
+    "matured": "investment_return",
+    "investment_return": "investment_return",
+    "borrowed": "loan_taken",
+    "disbursed": "loan_taken",
+    "loan_taken": "loan_taken",
+    "emi": "loan_repaid",
+    "repaid": "loan_repaid",
+    "loan_repaid": "loan_repaid",
+    "lent": "loan_given",
+    "loan_given": "loan_given",
+    "collected": "loan_collected",
+    "recovered": "loan_collected",
+    "loan_collected": "loan_collected",
+}

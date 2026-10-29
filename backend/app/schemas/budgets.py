@@ -8,7 +8,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.schemas.common import (
+from app.schemas.types import (
     Amount,
     Category,
     CreateDate,

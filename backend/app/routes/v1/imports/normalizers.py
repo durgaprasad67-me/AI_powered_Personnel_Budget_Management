@@ -12,8 +12,13 @@ Responsibilities:
 import math
 import re
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Any
+
+from app.domain.normalization import (
+    normalize_amount,
+    normalize_transaction_type,
+)
 
 # Maps common file column names to FinSight AI transaction fields.
 COLUMN_ALIASES: dict[str, set[str]] = {
@@ -128,92 +133,6 @@ def clean_value(value: Any) -> Any:
             return None
 
     return value
-
-
-def normalize_amount(value: Any) -> Decimal | None:
-    """
-    Convert common financial amount strings to Decimal.
-
-    Examples:
-        '₹1,500.00' -> Decimal('1500.00')
-        '2,500'     -> Decimal('2500')
-        '(500.00)'  -> Decimal('-500.00')
-
-    Returns None for empty values.
-    Raises ValueError for invalid amounts.
-    """
-    value = clean_value(value)
-
-    if value is None:
-        return None
-
-    if isinstance(value, bool):
-        raise ValueError("Boolean values are not valid transaction amounts.")
-
-    if isinstance(value, Decimal):
-        amount = value
-    else:
-        text = str(value).strip()
-
-        # Handle accounting notation for negative amounts.
-        is_negative = text.startswith("(") and text.endswith(")")
-
-        if is_negative:
-            text = text[1:-1].strip()
-
-        # Remove common currency symbols and grouping commas.
-        text = re.sub(r"[₹$€£,\s]", "", text)
-
-        # Reject malformed numeric strings instead of guessing.
-        if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", text):
-            raise ValueError(f"Invalid transaction amount: {value!r}")
-
-        try:
-            amount = Decimal(text)
-        except InvalidOperation as exc:
-            raise ValueError(f"Invalid transaction amount: {value!r}") from exc
-
-        if is_negative:
-            amount = -abs(amount)
-
-    if not amount.is_finite():
-        raise ValueError("Transaction amount must be finite.")
-
-    return amount
-
-
-def normalize_transaction_type(value: Any) -> str | None:
-    """
-    Standardize common transaction type labels.
-
-    Extend this mapping to match the allowed values in your schema.
-    """
-    value = clean_value(value)
-
-    if value is None:
-        return None
-
-    text = str(value).strip().lower().replace("-", "_").replace(" ", "_")
-
-    aliases = {
-        "income": "income",
-        "credit": "income",
-        "cr": "income",
-        "deposit": "income",
-        "salary": "income",
-        "expense": "expense",
-        "debit": "expense",
-        "dr": "expense",
-        "withdrawal": "expense",
-        "investment": "investment",
-        "investment_return": "investment_return",
-        "loan_taken": "loan_taken",
-        "loan_repaid": "loan_repaid",
-        "loan_given": "loan_given",
-        "loan_collected": "loan_collected",
-    }
-
-    return aliases.get(text, text)
 
 
 def _collect_normalized_fields(row: dict[str, Any]) -> dict[str, Any]:

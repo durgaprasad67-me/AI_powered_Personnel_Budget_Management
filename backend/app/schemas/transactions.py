@@ -1,15 +1,15 @@
 from datetime import date as Date
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.common import (
+from app.domain.categorization import fill_missing_fields
+from app.domain.dates import today_ist
+from app.schemas.types import (
     Amount,
     Category,
     CreateDate,
     Description,
     TransactionType,
     UpdateDate,
-    fill_missing_fields,
-    today_ist,
 )
 
 

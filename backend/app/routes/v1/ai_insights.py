@@ -16,7 +16,7 @@ from app.schemas.ai_insights import (
     TransactionExtractionResponse,
     TransactionTextRequest,
 )
-from app.schemas.common import today_ist
+from app.domain.dates import today_ist
 
 router = APIRouter(
     prefix="/ai",
