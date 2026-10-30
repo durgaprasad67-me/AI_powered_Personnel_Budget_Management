@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_goal_service
-from app.schemas.financial_goals import (
+from app.schemas.goals import (
     FinancialGoalCreate,
     FinancialGoalProgress,
     FinancialGoalUpdate,

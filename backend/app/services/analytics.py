@@ -9,7 +9,7 @@ from app.domain.transaction_types import (
     TRANSACTION_TYPES,
 )
 from app.repositories.analytics import AnalyticsRepository
-from app.schemas.ai_insights import CategorySpending, SpendingSummary
+from app.schemas.insights import CategorySpending, SpendingSummary
 
 
 def build_monthly_summary(month: str, rows: list[dict[str, Any]]) -> dict[str, Any]:

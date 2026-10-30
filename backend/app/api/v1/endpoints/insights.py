@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.api.deps import get_analytics_service
 from app.core.config import get_settings
 from app.domain.dates import today_ist
-from app.schemas.ai_insights import (
+from app.schemas.insights import (
     SpendingInsightRequest,
     SpendingInsightResponse,
     TransactionExtractionResponse,

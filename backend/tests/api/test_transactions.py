@@ -4,10 +4,10 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.api.v1.endpoints.dashboard import build_summary
 from app.domain.dates import today_ist
 from app.main import app
 from app.schemas.transactions import TransactionCreate, TransactionUpdate
+from app.services.analytics import build_monthly_summary
 
 client = TestClient(app)
 
@@ -248,7 +248,7 @@ def test_monthly_summary_keeps_loans_and_investments_out_of_spending():
     def row(kind, category, total):
         return {"_id": {"type": kind, "category": category}, "total": total}
 
-    summary = build_summary(
+    summary = build_monthly_summary(
         "2026-10",
         [
             row("income", "salary", 50000.0),
