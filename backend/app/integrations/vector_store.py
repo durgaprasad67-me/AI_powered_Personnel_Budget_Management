@@ -6,10 +6,6 @@ from langchain_core.documents import Document
 from app.core.config import get_settings
 from app.integrations.llm import get_embedding_model
 
-settings = get_settings()
-VECTOR_DB_PATH = Path(settings.chroma_persist_directory)
-COLLECTION_NAME = settings.chroma_collection_name
-
 _vector_store: Chroma | None = None
 
 
@@ -18,12 +14,14 @@ def get_vector_store() -> Chroma:
     global _vector_store
 
     if _vector_store is None:
-        VECTOR_DB_PATH.mkdir(parents=True, exist_ok=True)
+        settings = get_settings()
+        vector_db_path = Path(settings.chroma_persist_directory)
+        vector_db_path.mkdir(parents=True, exist_ok=True)
 
         _vector_store = Chroma(
-            collection_name=COLLECTION_NAME,
+            collection_name=settings.chroma_collection_name,
             embedding_function=get_embedding_model(),
-            persist_directory=str(VECTOR_DB_PATH),
+            persist_directory=str(vector_db_path),
         )
 
     return _vector_store
