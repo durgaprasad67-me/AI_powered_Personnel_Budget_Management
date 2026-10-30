@@ -83,6 +83,7 @@ class FakeBudgetRepository:
             str(document.get("id", ObjectId())): deepcopy(document)
             for document in (documents or [])
         }
+        self.spent_amount_value = 0.0
 
     @staticmethod
     def parse_id(budget_id: str) -> ObjectId | None:
@@ -128,7 +129,7 @@ class FakeBudgetRepository:
         end_date: str,
         category: str | None,
     ) -> float:
-        return 0.0
+        return self.spent_amount_value
 
 
 class FakeGoalRepository:
