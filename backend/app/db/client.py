@@ -1,33 +1,37 @@
+from functools import lru_cache
 from urllib.parse import quote_plus
 
 from pymongo import AsyncMongoClient
 
 from app.core.config import get_settings
 
-settings = get_settings()
 
-if settings.mongo_user and settings.mongo_password and settings.mongo_cluster:
+@lru_cache
+def get_client() -> AsyncMongoClient:
+    settings = get_settings()
+    if not (
+        settings.mongo_user
+        and settings.mongo_password
+        and settings.mongo_cluster
+    ):
+        raise RuntimeError("MONGO_USER, MONGO_PASSWORD and MONGO_CLUSTER must be set")
+
     username = quote_plus(settings.mongo_user)
     password = quote_plus(settings.mongo_password)
-    MONGODB_URL = (
+    mongodb_url = (
         f"mongodb+srv://{username}:{password}@{settings.mongo_cluster}/"
         "?retryWrites=true&w=majority"
     )
-else:
-    MONGODB_URL = "mongodb://localhost:27017"
-
-client = AsyncMongoClient(MONGODB_URL)
-database = client[settings.database_name]
+    return AsyncMongoClient(mongodb_url)
 
 
+@lru_cache
 def get_database():
-    return database
+    return get_client()[get_settings().database_name]
 
 
-transactions_collection = database["transactions"]
-budgets_collection = database["budgets"]
-financial_goals_collection = database["financial_goals"]
-
-
-async def close_database():
+async def close_database() -> None:
+    client = get_client()
     await client.close()
+    get_database.cache_clear()
+    get_client.cache_clear()

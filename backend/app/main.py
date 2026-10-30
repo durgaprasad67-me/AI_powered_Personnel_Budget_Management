@@ -12,8 +12,9 @@ from app.db.indexes import ensure_indexes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await get_database().command("ping")
-    await ensure_indexes()
+    database = get_database()
+    await database.command("ping")
+    await ensure_indexes(database)
     yield
     await close_database()
 
