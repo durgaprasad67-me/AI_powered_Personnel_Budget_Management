@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_analytics_service
+from app.schemas.analytics import MonthlyAnalyticsSummary
 from app.services.analytics import AnalyticsService
 
 router = APIRouter(tags=["Analytics"])
 
 
-@router.get("/analytics/summary")
+@router.get("/analytics/summary", response_model=MonthlyAnalyticsSummary)
 async def spending_summary(
     month: str = Query(
         ...,

@@ -1,13 +1,20 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_budget_service
-from app.schemas.budgets import BudgetCreate, BudgetProgress, BudgetUpdate
+from app.schemas.budgets import (
+    BudgetCreate,
+    BudgetListResponse,
+    BudgetProgress,
+    BudgetResponse,
+    BudgetUpdate,
+)
+from app.schemas.common import MessageResponse
 from app.services.budgets import BudgetService
 
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
 async def create_budget(
     budget: BudgetCreate,
     service: BudgetService = Depends(get_budget_service),
@@ -15,7 +22,7 @@ async def create_budget(
     return await service.create(budget)
 
 
-@router.get("")
+@router.get("", response_model=BudgetListResponse)
 async def list_budgets(
     limit: int = Query(default=50, ge=1, le=100),
     skip: int = Query(default=0, ge=0),
@@ -24,7 +31,7 @@ async def list_budgets(
     return await service.list(limit=limit, skip=skip)
 
 
-@router.get("/{budget_id}")
+@router.get("/{budget_id}", response_model=BudgetResponse)
 async def get_budget(
     budget_id: str,
     service: BudgetService = Depends(get_budget_service),
@@ -32,7 +39,7 @@ async def get_budget(
     return await service.get(budget_id)
 
 
-@router.patch("/{budget_id}")
+@router.patch("/{budget_id}", response_model=BudgetResponse)
 async def update_budget(
     budget_id: str,
     updates: BudgetUpdate,
@@ -41,7 +48,7 @@ async def update_budget(
     return await service.update(budget_id, updates)
 
 
-@router.delete("/{budget_id}")
+@router.delete("/{budget_id}", response_model=MessageResponse)
 async def delete_budget(
     budget_id: str,
     service: BudgetService = Depends(get_budget_service),

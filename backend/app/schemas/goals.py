@@ -53,6 +53,13 @@ class FinancialGoalResponse(BaseModel):
     status: GoalStatus = "active"
 
 
+class FinancialGoalListResponse(BaseModel):
+    items: list[FinancialGoalResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    skip: int = Field(ge=0)
+
+
 
 # FINANCIAL GOAL PROGRESS
 class FinancialGoalProgress(BaseModel):

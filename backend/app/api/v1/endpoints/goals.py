@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_goal_service
+from app.schemas.common import MessageResponse
 from app.schemas.goals import (
     FinancialGoalCreate,
+    FinancialGoalListResponse,
     FinancialGoalProgress,
+    FinancialGoalResponse,
     FinancialGoalUpdate,
 )
 from app.services.goals import GoalService
@@ -14,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FinancialGoalResponse, status_code=status.HTTP_201_CREATED)
 async def create_financial_goal(
     goal: FinancialGoalCreate,
     service: GoalService = Depends(get_goal_service),
@@ -22,7 +25,7 @@ async def create_financial_goal(
     return await service.create(goal)
 
 
-@router.get("")
+@router.get("", response_model=FinancialGoalListResponse)
 async def list_financial_goals(
     status_filter: str | None = Query(
         default=None,
@@ -40,7 +43,7 @@ async def list_financial_goals(
     )
 
 
-@router.get("/{goal_id}")
+@router.get("/{goal_id}", response_model=FinancialGoalResponse)
 async def get_financial_goal(
     goal_id: str,
     service: GoalService = Depends(get_goal_service),
@@ -48,7 +51,7 @@ async def get_financial_goal(
     return await service.get(goal_id)
 
 
-@router.patch("/{goal_id}")
+@router.patch("/{goal_id}", response_model=FinancialGoalResponse)
 async def update_financial_goal(
     goal_id: str,
     updates: FinancialGoalUpdate,
@@ -65,7 +68,7 @@ async def get_financial_goal_progress(
     return await service.progress(goal_id)
 
 
-@router.delete("/{goal_id}")
+@router.delete("/{goal_id}", response_model=MessageResponse)
 async def delete_financial_goal(
     goal_id: str,
     service: GoalService = Depends(get_goal_service),

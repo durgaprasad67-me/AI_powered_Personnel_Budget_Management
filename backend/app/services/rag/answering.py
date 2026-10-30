@@ -1,15 +1,9 @@
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.integrations.llm import get_chat_model
 from app.integrations.vector_store import retrieve_documents
-
-
-def get_llm() -> ChatGoogleGenerativeAI:
-    """Create the Gemini chat model through LangChain."""
-    return get_chat_model()
 
 
 async def generate_response(
@@ -23,7 +17,7 @@ async def generate_response(
     ),
 ) -> str:
     """Generate an answer using Gemini through LangChain."""
-    llm = get_llm()
+    llm = get_chat_model()
 
     messages = [
         SystemMessage(content=system_prompt),

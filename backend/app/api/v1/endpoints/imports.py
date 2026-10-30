@@ -1,10 +1,8 @@
-from typing import Any
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.api.deps import get_transaction_repository
-from app.core.exceptions import InvalidInputError
 from app.repositories.transactions import TransactionRepository
+from app.schemas.common import ImportResult
 from app.services.importing.constants import MAX_FILE_SIZE
 from app.services.importing.service import (
     extract_transactions,
@@ -45,7 +43,7 @@ async def _read_file(file: UploadFile) -> bytes:
 async def import_transactions(
     file: UploadFile = File(...),
     repository: TransactionRepository = Depends(get_transaction_repository),
-) -> dict[str, Any]:
+) -> ImportResult:
     """
     Extract, normalize, validate, and import transactions.
     """
@@ -56,13 +54,7 @@ async def import_transactions(
         )
 
     filename = file.filename
-    try:
-        validate_extension(filename)
-    except InvalidInputError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.detail,
-        ) from exc
+    validate_extension(filename)
 
     try:
         content = await _read_file(file)
@@ -81,10 +73,5 @@ async def import_transactions(
             "transactions": imported_ids,
         }
 
-    except InvalidInputError as exc:
-        raise HTTPException(
-            status_code=exc.status_code,
-            detail=exc.detail,
-        ) from exc
     finally:
         await file.close()

@@ -12,6 +12,7 @@ from app.core.exceptions import (
 )
 from app.db.client import close_database, get_database
 from app.db.indexes import ensure_indexes
+from app.schemas.common import HomeResponse
 
 
 @asynccontextmanager
@@ -46,7 +47,7 @@ async def external_service_handler(request, exc: ExternalServiceError):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
-@app.get("/")
+@app.get("/", response_model=HomeResponse)
 async def home():
     return {
         "message": "Welcome to FinSight AI",

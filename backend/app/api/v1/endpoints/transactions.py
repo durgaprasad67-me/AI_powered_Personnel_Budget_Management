@@ -3,8 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, status
 
 from app.api.deps import get_transaction_service
+from app.schemas.common import MessageResponse
 from app.schemas.transactions import (
     TransactionCreate,
+    TransactionListResponse,
+    TransactionResponse,
     TransactionUpdate,
 )
 from app.services.transactions import TransactionService
@@ -12,7 +15,7 @@ from app.services.transactions import TransactionService
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 TransactionId = Annotated[int, Path(ge=1)]
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transaction(
     transaction: TransactionCreate,
     service: TransactionService = Depends(get_transaction_service),
@@ -20,7 +23,7 @@ async def create_transaction(
     return await service.create(transaction)
 
 
-@router.get("")
+@router.get("", response_model=TransactionListResponse)
 async def get_transactions(
     transaction_type: str | None = Query(default=None),
     category: str | None = Query(default=None),
@@ -40,7 +43,7 @@ async def get_transactions(
     )
 
 
-@router.get("/{transaction_id}")
+@router.get("/{transaction_id}", response_model=TransactionResponse)
 async def get_transaction(
     transaction_id: TransactionId,
     service: TransactionService = Depends(get_transaction_service),
@@ -48,7 +51,7 @@ async def get_transaction(
     return await service.get(transaction_id)
 
 
-@router.patch("/{transaction_id}")
+@router.patch("/{transaction_id}", response_model=TransactionResponse)
 async def update_transaction(
     transaction_id: TransactionId,
     updates: TransactionUpdate,
@@ -57,7 +60,7 @@ async def update_transaction(
     return await service.update(transaction_id, updates)
 
 
-@router.put("/{transaction_id}")
+@router.put("/{transaction_id}", response_model=TransactionResponse)
 async def replace_transaction(
     transaction_id: TransactionId,
     transaction: TransactionCreate,
@@ -66,7 +69,7 @@ async def replace_transaction(
     return await service.replace(transaction_id, transaction)
 
 
-@router.delete("/{transaction_id}")
+@router.delete("/{transaction_id}", response_model=MessageResponse)
 async def delete_transaction(
     transaction_id: TransactionId,
     service: TransactionService = Depends(get_transaction_service),

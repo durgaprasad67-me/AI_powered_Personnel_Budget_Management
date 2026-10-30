@@ -84,6 +84,13 @@ class BudgetResponse(BaseModel):
     end_date: Date | None = None
 
 
+class BudgetListResponse(BaseModel):
+    items: list[BudgetResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    skip: int = Field(ge=0)
+
+
 # BUDGET PROGRESS
 class BudgetProgress(BaseModel):
     model_config = ConfigDict(extra="forbid")
