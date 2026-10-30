@@ -27,9 +27,7 @@ def get_transaction_service(
 
 
 def get_budget_service(database=Depends(get_database)) -> BudgetService:
-    return BudgetService(
-        BudgetRepository(database[BUDGETS], database[TRANSACTIONS])
-    )
+    return BudgetService(BudgetRepository(database[BUDGETS], database[TRANSACTIONS]))
 
 
 def get_goal_service(database=Depends(get_database)) -> GoalService:

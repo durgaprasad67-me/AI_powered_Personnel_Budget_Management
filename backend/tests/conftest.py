@@ -48,18 +48,18 @@ def overrides():
             return await ping_database()
 
     app.dependency_overrides[get_database] = lambda: FakeDatabase()
-    app.dependency_overrides[get_transaction_repository] = (
-        lambda: transaction_repository
+    app.dependency_overrides[get_transaction_repository] = lambda: (
+        transaction_repository
     )
-    app.dependency_overrides[get_transaction_service] = (
-        lambda: TransactionService(transaction_repository)
+    app.dependency_overrides[get_transaction_service] = lambda: TransactionService(
+        transaction_repository
     )
-    app.dependency_overrides[get_budget_service] = (
-        lambda: BudgetService(budget_repository)
+    app.dependency_overrides[get_budget_service] = lambda: BudgetService(
+        budget_repository
     )
     app.dependency_overrides[get_goal_service] = lambda: GoalService(goal_repository)
-    app.dependency_overrides[get_analytics_service] = (
-        lambda: AnalyticsService(analytics_repository)
+    app.dependency_overrides[get_analytics_service] = lambda: AnalyticsService(
+        analytics_repository
     )
 
     yield {

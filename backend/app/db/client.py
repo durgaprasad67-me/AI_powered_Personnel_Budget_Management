@@ -9,11 +9,7 @@ from app.core.config import get_settings
 @lru_cache
 def get_client() -> AsyncMongoClient:
     settings = get_settings()
-    if not (
-        settings.mongo_user
-        and settings.mongo_password
-        and settings.mongo_cluster
-    ):
+    if not (settings.mongo_user and settings.mongo_password and settings.mongo_cluster):
         raise RuntimeError("MONGO_USER, MONGO_PASSWORD and MONGO_CLUSTER must be set")
 
     username = quote_plus(settings.mongo_user)

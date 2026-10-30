@@ -46,12 +46,7 @@ class BudgetRepository:
         skip: int,
     ) -> tuple[list[dict[str, Any]], int]:
         total = await self.budgets.count_documents({})
-        cursor = (
-            self.budgets.find({})
-            .sort("_id", -1)
-            .skip(skip)
-            .limit(limit)
-        )
+        cursor = self.budgets.find({}).sort("_id", -1).skip(skip).limit(limit)
         items = [serialize_budget(document) async for document in cursor]
         return items, total
 

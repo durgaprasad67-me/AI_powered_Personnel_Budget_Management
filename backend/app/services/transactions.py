@@ -33,8 +33,7 @@ class TransactionService:
             normalized_type = normalize_type(transaction_type)
             if normalized_type not in TRANSACTION_TYPES:
                 raise InvalidInputError(
-                    "transaction_type must be one of: "
-                    + ", ".join(TRANSACTION_TYPES)
+                    "transaction_type must be one of: " + ", ".join(TRANSACTION_TYPES)
                 )
             filters["transaction_type"] = normalized_type
 

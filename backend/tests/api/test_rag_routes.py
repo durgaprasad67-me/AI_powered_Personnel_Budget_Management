@@ -4,11 +4,13 @@ from unittest.mock import AsyncMock
 def test_ask_rag_returns_answer(client, monkeypatch):
     monkeypatch.setattr(
         "app.api.v1.endpoints.rag.answer_with_rag",
-        AsyncMock(return_value={
-            "question": "How can I reduce food spending?",
-            "answer": "Review recurring food purchases.",
-            "sources": ["budget-guide.txt"],
-        }),
+        AsyncMock(
+            return_value={
+                "question": "How can I reduce food spending?",
+                "answer": "Review recurring food purchases.",
+                "sources": ["budget-guide.txt"],
+            }
+        ),
     )
     response = client.post(
         "/api/v1/ai/rag/ask",
@@ -18,9 +20,11 @@ def test_ask_rag_returns_answer(client, monkeypatch):
     assert response.json()["answer"] == "Review recurring food purchases."
     assert response.json()["sources"] == ["budget-guide.txt"]
 
+
 def test_ask_rag_rejects_short_question(client):
     response = client.post("/api/v1/ai/rag/ask", json={"question": "hi"})
     assert response.status_code == 422
+
 
 def test_index_document_calls_indexer(client, monkeypatch):
     monkeypatch.setattr(
@@ -32,10 +36,13 @@ def test_index_document_calls_indexer(client, monkeypatch):
     )
     response = client.post(
         "/api/v1/ai/rag/documents",
-        files={"file": ("budget-guide.txt", b"Spend less than you earn.", "text/plain")},
+        files={
+            "file": ("budget-guide.txt", b"Spend less than you earn.", "text/plain")
+        },
     )
     assert response.status_code == 201
     assert response.json()["chunks_created"] == 2
+
 
 def test_index_document_rejects_unsupported_extension(client):
     response = client.post(

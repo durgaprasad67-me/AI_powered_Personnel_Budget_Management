@@ -75,9 +75,7 @@ def _extract_table_rows(extracted_table: Any) -> list[dict[str, Any]]:
         return []
 
     return [
-        row
-        for raw_row in extracted_table[1:]
-        if (row := _build_row(headers, raw_row))
+        row for raw_row in extracted_table[1:] if (row := _build_row(headers, raw_row))
     ]
 
 
@@ -87,11 +85,7 @@ def _build_row(headers: list[str | None], raw_row: Any) -> dict[str, Any] | None
     if not any(values):
         return None
 
-    row = {
-        header: value
-        for header, value in zip(headers, values)
-        if header
-    }
+    row = {header: value for header, value in zip(headers, values) if header}
     return row or None
 
 

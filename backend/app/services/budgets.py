@@ -41,9 +41,7 @@ class BudgetService:
         merged = {**current, **changes}
         start_date = Date.fromisoformat(merged["start_date"])
         end_date = (
-            Date.fromisoformat(merged["end_date"])
-            if merged.get("end_date")
-            else None
+            Date.fromisoformat(merged["end_date"]) if merged.get("end_date") else None
         )
         if end_date is not None and end_date < start_date:
             raise InvalidInputError("end_date must be on or after start_date.")

@@ -8,8 +8,7 @@ from bson import ObjectId
 class FakeTransactionRepository:
     def __init__(self, documents: list[dict[str, Any]] | None = None):
         self.documents = {
-            int(document["id"]): deepcopy(document)
-            for document in (documents or [])
+            int(document["id"]): deepcopy(document) for document in (documents or [])
         }
         self.next_id = max(self.documents, default=0) + 1
 
@@ -31,8 +30,7 @@ class FakeTransactionRepository:
             deepcopy(document)
             for document in self.documents.values()
             if all(
-                self._matches(document, key, value)
-                for key, value in filters.items()
+                self._matches(document, key, value) for key, value in filters.items()
             )
         ]
         return items[skip : skip + limit], len(items)

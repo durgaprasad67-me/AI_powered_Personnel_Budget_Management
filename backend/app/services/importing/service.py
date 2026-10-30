@@ -55,9 +55,7 @@ def extract_transactions(
         ) from exc
 
     if not rows:
-        raise InvalidInputError(
-            "No transaction records were found in the file."
-        )
+        raise InvalidInputError("No transaction records were found in the file.")
     if len(rows) > MAX_ROWS:
         raise InvalidInputError(
             f"A maximum of {MAX_ROWS} transactions can be imported at once.",
@@ -77,8 +75,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> list[Any]:
                 ),
                 "invalid_rows": errors,
                 "error_limit_reached": (
-                    len(errors) >= 100
-                    and len(validated_transactions) != len(rows)
+                    len(errors) >= 100 and len(validated_transactions) != len(rows)
                 ),
             }
         )

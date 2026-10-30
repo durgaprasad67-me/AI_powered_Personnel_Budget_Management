@@ -112,7 +112,9 @@ def fill_missing_fields(data: dict) -> dict:
     if "category" in filled and category == "other" and isinstance(kind, str):
         category = TYPE_DEFAULT_CATEGORY.get(kind, category)
 
-    if description is None or (isinstance(description, str) and not description.strip()):
+    if description is None or (
+        isinstance(description, str) and not description.strip()
+    ):
         description = category
         filled.append("description")
 

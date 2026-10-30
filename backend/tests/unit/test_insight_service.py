@@ -31,9 +31,7 @@ def fake_client(response_text):
         return SimpleNamespace(text=response_text)
 
     return SimpleNamespace(
-        aio=SimpleNamespace(
-            models=SimpleNamespace(generate_content=generate_content)
-        )
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=generate_content))
     )
 
 
@@ -102,9 +100,7 @@ def test_extract_transaction_forces_confirmation():
     service = InsightService(FakeAnalytics(), lambda: client)
 
     result = asyncio.run(
-        service.extract_transaction(
-            TransactionTextRequest(text="Spent 10 on lunch")
-        )
+        service.extract_transaction(TransactionTextRequest(text="Spent 10 on lunch"))
     )
 
     assert result.requires_confirmation is True

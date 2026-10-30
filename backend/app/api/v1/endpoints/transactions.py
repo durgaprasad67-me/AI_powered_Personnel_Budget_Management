@@ -15,7 +15,11 @@ from app.services.transactions import TransactionService
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 TransactionId = Annotated[int, Path(ge=1)]
-@router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+
+
+@router.post(
+    "", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_transaction(
     transaction: TransactionCreate,
     service: TransactionService = Depends(get_transaction_service),

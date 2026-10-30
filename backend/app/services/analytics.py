@@ -43,8 +43,7 @@ def build_monthly_summary(month: str, rows: list[dict[str, Any]]) -> dict[str, A
             "invested": amount("investment"),
             "returned": amount("investment_return"),
             "net_invested": round(
-                totals.get("investment", 0)
-                - totals.get("investment_return", 0),
+                totals.get("investment", 0) - totals.get("investment_return", 0),
                 2,
             ),
         },

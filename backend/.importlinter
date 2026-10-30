@@ -9,3 +9,16 @@ layers =
     app.services
     app.repositories
     app.db
+
+[importlinter:contract:domain-is-pure]
+name = domain depends on nothing else in the app
+type = forbidden
+source_modules = app.domain
+forbidden_modules =
+    app.api
+    app.services
+    app.repositories
+    app.db
+    app.integrations
+    app.schemas
+    app.core

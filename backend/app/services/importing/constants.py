@@ -9,14 +9,16 @@ MAX_FILE_SIZE = 5 * 1024 * 1024
 MAX_ROWS = 500
 
 # Supported file extensions
-ALLOWED_EXTENSIONS = frozenset({
-    ".pdf",
-    ".docx",
-    ".txt",
-    ".csv",
-    ".xlsx",
-    ".xls",
-})
+ALLOWED_EXTENSIONS = frozenset(
+    {
+        ".pdf",
+        ".docx",
+        ".txt",
+        ".csv",
+        ".xlsx",
+        ".xls",
+    }
+)
 
 # Human-readable list of supported formats
 SUPPORTED_FORMATS = "PDF, DOCX, TXT, CSV, XLSX, XLS"

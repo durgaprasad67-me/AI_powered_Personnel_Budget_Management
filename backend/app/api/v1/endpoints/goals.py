@@ -17,7 +17,9 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=FinancialGoalResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=FinancialGoalResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_financial_goal(
     goal: FinancialGoalCreate,
     service: GoalService = Depends(get_goal_service),

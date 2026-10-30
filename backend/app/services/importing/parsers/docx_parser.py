@@ -73,11 +73,7 @@ def _build_row(headers: list[str | None], table_row: Any) -> dict[str, Any] | No
     if not any(values):
         return None
 
-    row = {
-        header: value
-        for header, value in zip(headers, values)
-        if header
-    }
+    row = {header: value for header, value in zip(headers, values) if header}
     return row or None
 
 

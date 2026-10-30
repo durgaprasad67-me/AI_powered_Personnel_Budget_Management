@@ -37,9 +37,7 @@ def transaction_data(**changes):
 def test_transaction_service_create_list_filters_get_update_replace_delete():
     repository = FakeTransactionRepository()
     service = TransactionService(repository)
-    created = run(
-        service.create(TransactionCreate.model_validate(transaction_data()))
-    )
+    created = run(service.create(TransactionCreate.model_validate(transaction_data())))
 
     assert created["id"] == 1
     listed = run(

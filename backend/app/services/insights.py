@@ -140,10 +140,7 @@ Rules:
         try:
             response = await client.aio.models.generate_content(
                 model=settings.gemini_model,
-                contents=(
-                    f"{system_prompt}\n\n"
-                    f"User transaction text:\n{request.text}"
-                ),
+                contents=(f"{system_prompt}\n\nUser transaction text:\n{request.text}"),
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0,

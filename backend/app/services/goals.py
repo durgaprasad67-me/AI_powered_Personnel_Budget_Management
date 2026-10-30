@@ -16,15 +16,11 @@ class GoalService:
     async def create(self, goal: FinancialGoalCreate) -> dict[str, Any]:
         data = goal.model_dump(mode="json")
         data["status"] = (
-            "completed"
-            if data["current_amount"] >= data["target_amount"]
-            else "active"
+            "completed" if data["current_amount"] >= data["target_amount"] else "active"
         )
         saved = await self.repository.create(data)
         if saved is None:
-            raise RuntimeError(
-                "Financial goal could not be retrieved after creation."
-            )
+            raise RuntimeError("Financial goal could not be retrieved after creation.")
         return saved
 
     async def list(
@@ -67,9 +63,7 @@ class GoalService:
         current = await self.get(goal_id)
         merged = {**current, **changes}
         if merged["current_amount"] > merged["target_amount"]:
-            raise InvalidInputError(
-                "Current amount cannot exceed target amount."
-            )
+            raise InvalidInputError("Current amount cannot exceed target amount.")
 
         if merged["current_amount"] >= merged["target_amount"]:
             changes["status"] = "completed"

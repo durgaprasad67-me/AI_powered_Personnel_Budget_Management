@@ -44,7 +44,6 @@ def check_date_range(value: Date) -> Date:
     """Validate the supported transaction date range."""
     if value < MIN_DATE or value > today_ist() + timedelta(days=MAX_DAYS_AHEAD):
         raise ValueError(
-            "Date must be on or after 2000-01-01 "
-            "and no more than one year ahead."
+            "Date must be on or after 2000-01-01 and no more than one year ahead."
         )
     return value

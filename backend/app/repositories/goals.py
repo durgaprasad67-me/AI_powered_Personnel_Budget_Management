@@ -40,12 +40,7 @@ class GoalRepository:
         skip: int,
     ) -> tuple[list[dict[str, Any]], int]:
         total = await self.collection.count_documents(filters)
-        cursor = (
-            self.collection.find(filters)
-            .sort("_id", -1)
-            .skip(skip)
-            .limit(limit)
-        )
+        cursor = self.collection.find(filters).sort("_id", -1).skip(skip).limit(limit)
         items = [serialize_goal(document) async for document in cursor]
         return items, total
 

@@ -1,58 +1,99 @@
 # FinSight AI
 
-AI-Powered Personal Finance & Spending Intelligence Platform.
+## Overview
 
-## Existing code reorganized
+FinSight AI is a FastAPI personal-finance platform backed by MongoDB Atlas.
+It normalizes and analyzes transactions, budgets, and financial goals, and
+uses Gemini plus ChromaDB for financial insights and document retrieval.
 
-This cleaned copy keeps files with actual implementation or configuration, plus the new test and work-log files. Empty files and comment/docstring-only placeholders for unimplemented features were removed.
+## Project layout
 
-- `backend/app/main.py` — FastAPI application and lifespan
-- `backend/app/db/client.py` — MongoDB Atlas connection
-- `backend/app/schemas/transactions.py` — transaction request schemas
-- `backend/app/api/v1/endpoints/transactions.py` — transaction CRUD and filtering
-- `backend/app/api/v1/endpoints/health.py` — health endpoint
-- `backend/app/api/v1/endpoints/dashboard.py` — monthly analytics summary
-- `backend/app/api/v1/router.py` — versioned route registration
+```text
+backend/app/
+├── api/            HTTP routes and dependency wiring
+├── core/           configuration and application exceptions
+├── db/             MongoDB client, collections, and indexes
+├── domain/         pure transaction and categorization logic
+├── schemas/        Pydantic request and response models
+├── repositories/   database access
+├── services/       application workflows
+└── integrations/   Gemini and ChromaDB integrations
+```
+
+## Setup
+
+From `backend`:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+```
+
+Fill in `.env` with MongoDB and Gemini credentials. Never commit `.env`;
+`.env.example` is the safe template.
 
 ## Run locally
 
-From the `backend` folder, ensure your local `.env` file contains `MONGO_USER`, `MONGO_PASSWORD`, `MONGO_CLUSTER`, and optionally `DATABASE_NAME`. Do not commit `.env`.
+From `backend`:
 
-Install dependencies and run:
-
-```bash
-python -m pip install -r requirements.txt
+```powershell
 python -m uvicorn app.main:app --reload
 ```
 
-API docs: `http://127.0.0.1:8000/docs`
+The API is available at `http://127.0.0.1:8000`. Interactive documentation
+is available at `/docs`.
 
-Versioned API endpoints are available under `/api/v1`; `/` and `/health` remain
-available at the root.
+## Run with Docker
 
-If your MongoDB password was shared or committed previously, rotate it in MongoDB Atlas.
+From the repository root:
 
-
-## Daily work log — 23 October 2026
-
-**Focus:** Start automated testing for the existing backend.
-
-### Added today
-- Replaced the placeholder `backend/tests/test_transactions.py` with four automated tests:
-  1. The home endpoint returns the expected welcome response.
-  2. Transaction creation rejects an amount of zero.
-  3. Transaction creation rejects an unsupported transaction type.
-  4. The transaction schema accepts a valid transaction.
-- Added `pytest` and `httpx2` to `backend/requirements.txt`.
-- Removed zero-byte files from the delivered archive.
-- Excluded `.git/`, `.venv/`, Python cache files, and `backend/.env` from the archive to avoid bundling local environment files or secrets.
-
-### Run today's tests
-From the `backend` directory:
-
-```bash
-python -m pip install -r requirements.txt
-python -m pytest tests/test_transactions.py -v
+```powershell
+docker compose -f deployment/docker-compose.yml up
 ```
 
-These tests are deliberately limited to application behavior and request validation; they do not verify live MongoDB CRUD operations. Database integration tests should be added separately using a dedicated test database or mocked collection methods.
+The Compose configuration mounts the persistent ChromaDB volume at
+`/data/chroma`.
+
+## Tests and lint
+
+From `backend`:
+
+```powershell
+python -m pytest -q
+python -c "import app.main"
+ruff check --select F,I,TID252 .
+ruff format --check .
+lint-imports
+```
+
+## API
+
+Application routes use the `/api/v1` prefix:
+
+- `/api/v1/transactions` — transaction CRUD and filtering
+- `/api/v1/budgets` — budget CRUD and progress
+- `/api/v1/financial-goals` — financial goals and progress
+- `/api/v1/analytics/summary` — monthly analytics
+- `/api/v1/ai/spending-insights` — Gemini spending insights
+- `/api/v1/ai/extract-transaction` — extract a transaction from text
+- `/api/v1/ai/rag/documents` — index a knowledge document
+- `/api/v1/ai/rag/ask` — query indexed documents
+- `/api/v1/imports` — import transactions from CSV, Excel, PDF, DOCX, or TXT
+
+Health checks are available at `/health` and `/api/v1/health`.
+
+## RAG documents
+
+Upload a supported document to `/api/v1/ai/rag/documents` as multipart form
+field `file`. The document is split, embedded with Gemini, and stored in
+ChromaDB. Query the indexed knowledge base by posting JSON to
+`/api/v1/ai/rag/ask`:
+
+```json
+{
+  "question": "What does the budget guide recommend?",
+  "k": 4
+}
+```

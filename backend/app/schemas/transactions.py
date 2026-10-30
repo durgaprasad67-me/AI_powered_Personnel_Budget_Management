@@ -32,7 +32,6 @@ class TransactionCreate(BaseModel):
         return data
 
 
-
 # UPDATE TRANSACTION
 class TransactionUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -41,7 +40,6 @@ class TransactionUpdate(BaseModel):
     category: Category | None = None
     description: Description | None = None
     date: UpdateDate | None = None
-
 
 
 # TRANSACTION RESPONSE
@@ -56,14 +54,12 @@ class TransactionResponse(BaseModel):
     auto_filled: list[str] = Field(default_factory=list)
 
 
-
 # PAGINATED TRANSACTION RESPONSE
 class TransactionListResponse(BaseModel):
     items: list[TransactionResponse]
     total: int = Field(ge=0)
     limit: int = Field(ge=1, le=100)
     skip: int = Field(ge=0)
-
 
 
 # TRANSACTION FILTERS

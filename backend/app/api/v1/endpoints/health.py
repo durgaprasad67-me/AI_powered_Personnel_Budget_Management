@@ -10,4 +10,7 @@ router = APIRouter(tags=["Health"])
 @router.get("/health", response_model=HealthResponse)
 async def health_check(database=Depends(get_database)):
     await database.command("ping")
-    return {"status": "healthy","database": "connected",}
+    return {
+        "status": "healthy",
+        "database": "connected",
+    }

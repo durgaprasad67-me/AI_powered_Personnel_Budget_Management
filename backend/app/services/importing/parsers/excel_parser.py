@@ -198,17 +198,13 @@ def _extract_headers(values: list[Any]) -> list[str] | None:
 
 def _row_to_record(values: list[Any], headers: list[str]) -> dict[str, Any]:
     """Convert one worksheet row to a record."""
-    if any(value is not None for value in values[len(headers):]):
+    if any(value is not None for value in values[len(headers) :]):
         raise ValueError("A worksheet row contains data beyond the header columns.")
 
     values = values[: len(headers)]
     values.extend([None] * (len(headers) - len(values)))
 
-    return {
-        header: value
-        for header, value in zip(headers, values)
-        if header
-    }
+    return {header: value for header, value in zip(headers, values) if header}
 
 
 def _clean_cell(value: Any) -> Any:

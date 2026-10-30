@@ -18,5 +18,12 @@ jobs:
         working-directory: backend
       - run: ruff check --select F,I,TID252 .
         working-directory: backend
+      - run: ruff format --check .
+        working-directory: backend
       - run: lint-imports
         working-directory: backend
+      - run: "! grep -rnE '^(from|import) (google|pymongo|langchain)' app/api"
+        working-directory: backend
+      - run: "! grep -rn 'fastapi' app/services app/repositories app/domain"
+        working-directory: backend
+      - run: docker build -t finsight-backend backend

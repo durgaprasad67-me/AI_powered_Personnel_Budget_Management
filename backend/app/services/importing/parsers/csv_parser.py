@@ -53,7 +53,9 @@ def _decode_content(content: bytes) -> str:
 
 def _parse_rows(text: str) -> list[dict[str, Any]]:
     """Parse CSV text into normalized transaction rows."""
-    reader = csv.DictReader(io.StringIO(text, newline=""), dialect=_detect_dialect(text))
+    reader = csv.DictReader(
+        io.StringIO(text, newline=""), dialect=_detect_dialect(text)
+    )
     _clean_headers(reader.fieldnames)
     rows = [_clean_row(raw_row) for raw_row in reader if _has_content(raw_row)]
     rows = [row for row in rows if row]
@@ -84,7 +86,9 @@ def _clean_headers(fieldnames: Sequence[str] | None) -> list[str]:
 
 def _has_content(raw_row: dict[str | None, str | None]) -> bool:
     """Return whether a CSV row contains any non-whitespace value."""
-    return any(value and value.strip() for value in raw_row.values() if isinstance(value, str))
+    return any(
+        value and value.strip() for value in raw_row.values() if isinstance(value, str)
+    )
 
 
 def _clean_row(raw_row: dict[str | None, str | None]) -> dict[str, Any]:

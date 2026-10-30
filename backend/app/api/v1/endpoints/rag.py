@@ -78,7 +78,9 @@ async def index_knowledge_document(
         return DocumentIndexResponse(
             filename=filename,
             chunks_created=int(result["chunks_created"]),
-            message="Document indexed successfully." if result["chunks_created"] else "No text chunks were found in the document.",
+            message="Document indexed successfully."
+            if result["chunks_created"]
+            else "No text chunks were found in the document.",
         )
     except HTTPException:
         raise

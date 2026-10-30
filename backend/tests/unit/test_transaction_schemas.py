@@ -137,17 +137,25 @@ def test_income_is_guessed_from_description():
 def test_update_schema_cleans_values_but_guesses_nothing():
     updates = TransactionUpdate.model_validate({"category": "  FOOD ", "amount": "₹99"})
 
-    assert updates.model_dump(exclude_unset=True) == {"category": "food", "amount": 99.0}
+    assert updates.model_dump(exclude_unset=True) == {
+        "category": "food",
+        "amount": 99.0,
+    }
 
 
 def guess(**fields):
-    return TransactionCreate.model_validate({"amount": 1000, "date": "2026-10-23", **fields})
+    return TransactionCreate.model_validate(
+        {"amount": 1000, "date": "2026-10-23", **fields}
+    )
 
 
 def test_sip_is_an_investment_not_an_expense():
     transaction = guess(description="Monthly SIP")
 
-    assert (transaction.category, transaction.transaction_type) == ("investment", "investment")
+    assert (transaction.category, transaction.transaction_type) == (
+        "investment",
+        "investment",
+    )
 
 
 def test_redeemed_investment_is_money_coming_back():
@@ -160,7 +168,10 @@ def test_redeemed_investment_is_money_coming_back():
 def test_emi_is_a_loan_repayment():
     transaction = guess(description="Home loan EMI")
 
-    assert (transaction.category, transaction.transaction_type) == ("loan", "loan_repaid")
+    assert (transaction.category, transaction.transaction_type) == (
+        "loan",
+        "loan_repaid",
+    )
 
 
 def test_borrowing_and_lending_are_understood():
@@ -171,7 +182,10 @@ def test_borrowing_and_lending_are_understood():
 def test_type_without_category_gets_a_sensible_category():
     transaction = guess(transaction_type="Borrowed")
 
-    assert (transaction.category, transaction.transaction_type) == ("loan", "loan_taken")
+    assert (transaction.category, transaction.transaction_type) == (
+        "loan",
+        "loan_taken",
+    )
     assert transaction.auto_filled == ["category", "description"]
 
 
