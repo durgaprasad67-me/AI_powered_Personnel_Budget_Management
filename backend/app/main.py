@@ -5,7 +5,11 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.router import api_router
-from app.core.exceptions import InvalidInputError, NotFoundError
+from app.core.exceptions import (
+    ExternalServiceError,
+    InvalidInputError,
+    NotFoundError,
+)
 from app.db.client import close_database, get_database
 from app.db.indexes import ensure_indexes
 
@@ -34,6 +38,11 @@ async def not_found_handler(request, exc: NotFoundError):
 
 @app.exception_handler(InvalidInputError)
 async def invalid_input_handler(request, exc: InvalidInputError):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(ExternalServiceError)
+async def external_service_handler(request, exc: ExternalServiceError):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 

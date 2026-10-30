@@ -5,10 +5,14 @@ from pydantic import SecretStr
 from app.core.config import get_settings
 
 
+class LLMNotConfiguredError(RuntimeError):
+    """Raised when the Gemini API key is not configured."""
+
+
 def get_gemini_client() -> genai.Client:
     settings = get_settings()
     if not settings.gemini_api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
+        raise LLMNotConfiguredError("GEMINI_API_KEY is missing from the environment.")
     return genai.Client(api_key=settings.gemini_api_key)
 
 
