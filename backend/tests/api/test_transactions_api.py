@@ -1,11 +1,4 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-client = TestClient(app)
-
-
-def test_home_endpoint_returns_welcome_message():
+def test_home_endpoint_returns_welcome_message(client):
     response = client.get("/")
 
     assert response.status_code == 200
@@ -13,7 +6,7 @@ def test_home_endpoint_returns_welcome_message():
     assert response.json()["status"] == "running"
 
 
-def test_create_transaction_rejects_non_positive_amount():
+def test_create_transaction_rejects_non_positive_amount(client):
     response = client.post(
         "/api/v1/transactions",
         json={
@@ -28,7 +21,7 @@ def test_create_transaction_rejects_non_positive_amount():
     assert response.status_code == 422
 
 
-def test_create_transaction_rejects_invalid_transaction_type():
+def test_create_transaction_rejects_invalid_transaction_type(client):
     response = client.post(
         "/api/v1/transactions",
         json={
@@ -43,13 +36,13 @@ def test_create_transaction_rejects_invalid_transaction_type():
     assert response.status_code == 422
 
 
-def test_create_transaction_rejects_missing_amount():
+def test_create_transaction_rejects_missing_amount(client):
     response = client.post("/api/v1/transactions", json={"description": "Lunch"})
 
     assert response.status_code == 422
 
 
-def test_filter_rejects_unknown_transaction_type():
+def test_filter_rejects_unknown_transaction_type(client):
     response = client.get(
         "/api/v1/transactions",
         params={"transaction_type": "loan"},
