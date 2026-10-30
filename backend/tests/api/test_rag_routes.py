@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 
-from app.api.v1.endpoints import rag
 from app.main import app
 
 client = TestClient(app)
@@ -10,7 +9,7 @@ client = TestClient(app)
 
 def test_ask_rag_returns_answer(monkeypatch):
     monkeypatch.setattr(
-        rag, "answer_with_rag",
+        "app.api.v1.endpoints.rag.answer_with_rag",
         AsyncMock(return_value={
             "question": "How can I reduce food spending?",
             "answer": "Review recurring food purchases.",
@@ -31,7 +30,7 @@ def test_ask_rag_rejects_short_question():
 
 def test_index_document_calls_indexer(monkeypatch):
     monkeypatch.setattr(
-        rag, "index_document",
+        "app.api.v1.endpoints.rag.index_document",
         lambda path, source_filename=None: {
             "filename": source_filename or path.name,
             "chunks_created": 2,
