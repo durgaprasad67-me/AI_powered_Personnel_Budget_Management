@@ -110,7 +110,7 @@ def index_document(
     add_documents(chunks)
 
     return {
-        "filename": Path(file_path).name,
+        "filename": source_filename or Path(file_path).name,
         "chunks_created": len(chunks),
     }
 
