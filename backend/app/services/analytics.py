@@ -3,20 +3,13 @@ from datetime import timedelta
 from typing import Any
 
 from app.core.exceptions import InvalidInputError
-from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
+from app.domain.transaction_types import (
+    CASH_IN_TYPES,
+    CASH_OUT_TYPES,
+    TRANSACTION_TYPES,
+)
 from app.repositories.analytics import AnalyticsRepository
 from app.schemas.ai_insights import CategorySpending, SpendingSummary
-
-SUPPORTED_TRANSACTION_TYPES = {
-    "income",
-    "expense",
-    "investment",
-    "investment_return",
-    "loan_taken",
-    "loan_repaid",
-    "loan_given",
-    "loan_collected",
-}
 
 
 def build_monthly_summary(month: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -96,7 +89,7 @@ class AnalyticsService:
             start_date=start_date,
             end_date=end_date,
         )
-        totals = dict.fromkeys(SUPPORTED_TRANSACTION_TYPES, 0.0)
+        totals = dict.fromkeys(TRANSACTION_TYPES, 0.0)
         categories: dict[str, dict[str, float | int]] = {}
 
         for row in rows:
