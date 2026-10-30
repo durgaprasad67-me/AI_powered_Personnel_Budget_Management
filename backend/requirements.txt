@@ -2,11 +2,11 @@ fastapi==0.159.1
 uvicorn[standard]==0.54.0
 pymongo==4.19.0
 python-dotenv==1.2.4
-python-multipart
-PyMuPDF
-python-docx
-openpyxl
-xlrd
+python-multipart==0.0.9
+PyMuPDF==2.0
+python-docx==1.2.0
+openpyxl==3.1.5
+xlrd==2.0.2
 aiofiles==25.1.0
 google-genai==2.34.0
 langchain-core==1.7.1
