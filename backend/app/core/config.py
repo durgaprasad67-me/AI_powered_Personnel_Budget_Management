@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     mongo_cluster: str | None = None
     database_name: str = "finsight_db"
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash-lite"
     gemini_embedding_model: str = "gemini-embedding-001"
     chroma_persist_directory: str = "./chroma_db"
     chroma_collection_name: str = "finsight_knowledge"

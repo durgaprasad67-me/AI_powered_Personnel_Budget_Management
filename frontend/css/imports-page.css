@@ -1,0 +1,5 @@
+.upload-card { display: grid; gap: 12px; align-content: start; }
+.upload-card h2, .upload-card p { margin: 0; }
+.upload-card form { display: grid; gap: 12px; }
+.upload-mark { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 15px; background: #e8f0ee; color: #4a7569; font-size: 26px; }
+.result-card { margin-top: 18px; }

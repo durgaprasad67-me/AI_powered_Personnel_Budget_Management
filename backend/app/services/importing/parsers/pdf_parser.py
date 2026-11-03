@@ -7,7 +7,7 @@ Scanned PDFs requiring OCR are not supported by this parser.
 
 from typing import Any
 
-import fitz  # PyMuPDF
+import pymupdf
 
 
 def extract_pdf(content: bytes) -> list[dict[str, Any]]:
@@ -29,7 +29,7 @@ def extract_pdf(content: bytes) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
     try:
-        with fitz.open(stream=content, filetype="pdf") as document:
+        with pymupdf.open(stream=content, filetype="pdf") as document:
             if document.is_encrypted:
                 raise ValueError("Password-protected PDFs are not supported.")
 

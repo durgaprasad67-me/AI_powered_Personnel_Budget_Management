@@ -45,6 +45,32 @@ python -m uvicorn app.main:app --reload
 The API is available at `http://127.0.0.1:8000`. Interactive documentation
 is available at `/docs`.
 
+To view the live dashboard, serve `frontend/html` with a local static server
+such as VS Code Live Server on port 5500, then open `dashboard.html`. The
+dashboard requests the selected month's data from
+`/api/v1/analytics/summary`.
+
+The feature pages are available from the shared dashboard sidebar:
+
+- `transactions.html` — transaction CRUD and filtering
+- `budgets.html` — budget CRUD
+- `goals.html` — financial goal CRUD and progress
+- `insights.html` — AI spending insights
+- `analytics.html` — charts for the selected month
+- `reports.html` — CSV download and printable summary
+- `imports.html` — transaction and knowledge-document uploads
+
+The pages use the shared frontend shell in `frontend/css/app.css` and
+`frontend/js/app.js`. To serve the complete frontend from the repository's
+`frontend` directory, use:
+
+```powershell
+cd frontend
+python -m http.server 5500
+```
+
+Then open `http://127.0.0.1:5500/html/dashboard.html`.
+
 ## Run with Docker
 
 From the repository root:

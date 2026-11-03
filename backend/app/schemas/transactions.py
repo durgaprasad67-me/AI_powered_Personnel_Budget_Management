@@ -45,7 +45,7 @@ class TransactionUpdate(BaseModel):
 # TRANSACTION RESPONSE
 class TransactionResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    id: int = Field(ge=1)
+    id: int | str = Field(...)
     amount: Amount
     transaction_type: TransactionType
     category: Category

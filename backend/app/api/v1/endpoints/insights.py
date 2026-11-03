@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_insight_service
 from app.schemas.insights import (
+    ChatRequest,
+    ChatResponse,
     SpendingInsightRequest,
     SpendingInsightResponse,
     TransactionExtractionResponse,
@@ -13,6 +15,14 @@ router = APIRouter(
     prefix="/ai",
     tags=["AI Financial Insights"],
 )
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat(
+    request: ChatRequest,
+    service: InsightService = Depends(get_insight_service),
+) -> ChatResponse:
+    return await service.chat(request)
 
 
 @router.post("/spending-insights", response_model=SpendingInsightResponse)

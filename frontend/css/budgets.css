@@ -1,0 +1,4 @@
+.budget-card { display: grid; gap: 14px; }
+.budget-card h2 { margin: 0; }
+.budget-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.budget-actions { display: flex; justify-content: flex-end; gap: 8px; }

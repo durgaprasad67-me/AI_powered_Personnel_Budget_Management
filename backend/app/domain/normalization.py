@@ -5,7 +5,7 @@ from app.domain.transaction_types import TYPE_ALIASES
 
 MAX_AMOUNT = 100_000_000
 CURRENCY_JUNK = re.compile(
-    r"₹|[$€£,]|\b(?:rs\.?|inr)(?=\s|[0-9]|$)|\s+",
+    r"₹|[$€£,]|\b(?:rs\.?|inr)(?=\s|\d|$)|\s+",
     re.IGNORECASE,
 )
 
@@ -60,6 +60,33 @@ def round_amount(value: float) -> float:
     return rounded
 
 
+def _unwrap_negative_amount(text: str) -> tuple[str, bool]:
+    """Remove accounting-style parentheses and report whether they were used."""
+    is_negative = text.startswith("(") and text.endswith(")")
+    if is_negative:
+        return text[1:-1].strip(), True
+    return text, False
+
+
+def _parse_decimal_text(text: str, original_value) -> Decimal:
+    """Validate and convert normalized amount text."""
+    if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", text):
+        raise ValueError(f"Invalid transaction amount: {original_value!r}")
+
+    try:
+        return Decimal(text)
+    except InvalidOperation as exc:
+        raise ValueError(f"Invalid transaction amount: {original_value!r}") from exc
+
+
+def _parse_amount_text(value) -> Decimal:
+    """Parse an amount represented as text."""
+    text, is_negative = _unwrap_negative_amount(str(value).strip())
+    text = re.sub(r"[₹$€£,\s]|(?:rs\.?|inr)", "", text, flags=re.IGNORECASE)
+    amount = _parse_decimal_text(text, value)
+    return -abs(amount) if is_negative else amount
+
+
 def normalize_amount(value) -> Decimal | None:
     """Convert common financial amount strings to Decimal."""
     if value is None or (isinstance(value, str) and not value.strip()):
@@ -71,22 +98,7 @@ def normalize_amount(value) -> Decimal | None:
     if isinstance(value, Decimal):
         amount = value
     else:
-        text = str(value).strip()
-        is_negative = text.startswith("(") and text.endswith(")")
-        if is_negative:
-            text = text[1:-1].strip()
-
-        text = re.sub(r"[₹$€£,\s]|(?:rs\.?|inr)", "", text, flags=re.IGNORECASE)
-        if not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", text):
-            raise ValueError(f"Invalid transaction amount: {value!r}")
-
-        try:
-            amount = Decimal(text)
-        except InvalidOperation as exc:
-            raise ValueError(f"Invalid transaction amount: {value!r}") from exc
-
-        if is_negative:
-            amount = -abs(amount)
+        amount = _parse_amount_text(value)
 
     if not amount.is_finite():
         raise ValueError("Transaction amount must be finite.")

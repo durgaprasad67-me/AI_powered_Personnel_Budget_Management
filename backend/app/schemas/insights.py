@@ -1,4 +1,5 @@
 from datetime import date as Date
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -74,6 +75,33 @@ class SpendingInsightRequest(BaseModel):
         ):
             raise ValueError("start_date must not be after end_date.")
         return self
+
+
+ChatIntent = Literal[
+    "greeting",
+    "help",
+    "spending_analysis",
+]
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=1000)
+    month: str | None = Field(
+        default=None,
+        pattern=r"^\d{4}-(0[1-9]|1[0-2])$",
+    )
+    include_recommendations: bool = True
+
+
+class ChatResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=5000)
+    intent: ChatIntent
+    month: str
+    suggestions: list[str] = Field(default_factory=list, max_length=5)
 
 
 # FINANCIAL RECOMMENDATION

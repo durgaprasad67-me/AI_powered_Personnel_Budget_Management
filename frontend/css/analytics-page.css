@@ -1,0 +1,3 @@
+.chart-card { min-height: 360px; }
+.chart-card h2 { margin-top: 0; }
+.chart-card canvas { max-height: 290px; }

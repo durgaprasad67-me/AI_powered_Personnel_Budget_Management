@@ -1,0 +1,5 @@
+.goal-card { display: grid; gap: 14px; }
+.goal-card h2 { margin: 0; }
+.goal-row, .goal-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.goal-meta { color: var(--muted); font-size: 12px; }
+.goal-actions { display: flex; justify-content: flex-end; gap: 8px; }

@@ -1,5 +1,9 @@
 from pydantic import BaseModel, Field
 
+from app.schemas.budgets import BudgetResponse
+from app.schemas.goals import FinancialGoalResponse
+from app.schemas.transactions import TransactionResponse
+
 
 class InvestmentSummary(BaseModel):
     invested: float
@@ -23,3 +27,9 @@ class MonthlyAnalyticsSummary(BaseModel):
     loans: LoanSummary
     net_cash_flow: float
     category_breakdown: dict[str, float] = Field(default_factory=dict)
+
+
+class DashboardResponse(MonthlyAnalyticsSummary):
+    transactions: list[TransactionResponse] = Field(default_factory=list)
+    budgets: list[BudgetResponse] = Field(default_factory=list)
+    goals: list[FinancialGoalResponse] = Field(default_factory=list)

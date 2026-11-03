@@ -1,0 +1,6 @@
+.stat-card { padding: 18px; }
+.stat-card .stat-value { font-size: 21px; }
+.row-actions { display: flex; gap: 6px; white-space: nowrap; }
+.row-actions button { padding: 6px 9px; font-size: 11px; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; color: var(--muted); font-size: 12px; }
+.pagination div { display: flex; gap: 8px; }

@@ -5,9 +5,10 @@ from pymongo.errors import DuplicateKeyError
 
 
 def serialize_transaction(document: dict[str, Any]) -> dict[str, Any]:
-    """Convert MongoDB's numeric _id to the public id field."""
+    """Convert MongoDB's _id to a JSON-compatible public id field."""
     result = dict(document)
-    result["id"] = result.pop("_id")
+    identifier = result.pop("_id")
+    result["id"] = identifier if isinstance(identifier, int) else str(identifier)
     return result
 
 
