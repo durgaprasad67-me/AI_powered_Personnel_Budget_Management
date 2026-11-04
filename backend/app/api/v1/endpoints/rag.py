@@ -9,6 +9,7 @@ import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
+from app.integrations.llm import LLMNotConfiguredError
 from app.integrations.vector_store import delete_document, list_documents
 from app.schemas.rag import (
     DocumentIndexResponse,
@@ -110,6 +111,11 @@ async def index_knowledge_document(
         )
     except HTTPException:
         raise
+    except LLMNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service is not configured.",
+        ) from exc
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
@@ -130,6 +136,11 @@ async def ask_knowledge_base(request: RAGQuestionRequest):
     try:
         result = await answer_with_rag(request.question, k=request.k)
         return RAGAnswerResponse.model_validate(result)
+    except LLMNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service is not configured.",
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:

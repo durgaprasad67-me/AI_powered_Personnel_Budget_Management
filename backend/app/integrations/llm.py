@@ -19,7 +19,7 @@ def get_gemini_client() -> genai.Client:
 def get_chat_model() -> ChatGoogleGenerativeAI:
     settings = get_settings()
     if not settings.gemini_api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
+        raise LLMNotConfiguredError("GEMINI_API_KEY is missing from the environment.")
     return ChatGoogleGenerativeAI(
         model=settings.gemini_model,
         google_api_key=SecretStr(settings.gemini_api_key),
@@ -30,7 +30,7 @@ def get_chat_model() -> ChatGoogleGenerativeAI:
 def get_embedding_model():
     settings = get_settings()
     if not settings.gemini_api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing from the environment.")
+        raise LLMNotConfiguredError("GEMINI_API_KEY is missing from the environment.")
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
     return GoogleGenerativeAIEmbeddings(
