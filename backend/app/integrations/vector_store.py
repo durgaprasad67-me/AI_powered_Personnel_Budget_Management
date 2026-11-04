@@ -73,6 +73,37 @@ async def retrieve_documents(
     ]
 
 
+def list_documents() -> list[dict[str, str | int]]:
+    """List managed documents and their indexed chunk counts."""
+    records = get_vector_store().get(include=["metadatas"])
+    grouped: dict[str, dict[str, str | int]] = {}
+    for metadata in records.get("metadatas", []):
+        if not metadata or not metadata.get("doc_id"):
+            continue
+        doc_id = str(metadata["doc_id"])
+        if doc_id not in grouped:
+            grouped[doc_id] = {
+                "doc_id": doc_id,
+                "source": str(metadata.get("source", "Knowledge base")),
+                "chunk_count": 0,
+            }
+        grouped[doc_id]["chunk_count"] = int(grouped[doc_id]["chunk_count"]) + 1
+    return list(grouped.values())
+
+
+def delete_document(doc_id: str) -> bool:
+    """Delete all indexed chunks belonging to a document."""
+    records = get_vector_store().get(
+        where={"doc_id": doc_id},
+        include=["metadatas"],
+    )
+    document_ids = records.get("ids", [])
+    if not document_ids:
+        return False
+    get_vector_store().delete(ids=document_ids)
+    return True
+
+
 def delete_documents(document_ids: list[str]) -> None:
     """Delete indexed document chunks by their ChromaDB IDs."""
     if not document_ids:

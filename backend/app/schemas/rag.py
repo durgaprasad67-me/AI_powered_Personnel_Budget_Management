@@ -15,6 +15,12 @@ class RAGSourceChunk(BaseModel):
     score: float
 
 
+class RAGDocumentSummary(BaseModel):
+    doc_id: str
+    source: str
+    chunk_count: int = Field(ge=0)
+
+
 class RAGAnswerResponse(BaseModel):
     question: str
     answer: str

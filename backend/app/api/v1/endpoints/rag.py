@@ -9,9 +9,11 @@ import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
+from app.integrations.vector_store import delete_document, list_documents
 from app.schemas.rag import (
     DocumentIndexResponse,
     RAGAnswerResponse,
+    RAGDocumentSummary,
     RAGQuestionRequest,
 )
 from app.services.rag.answering import answer_with_rag
@@ -23,6 +25,24 @@ from app.services.rag.documents import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai/rag", tags=["AI RAG"])
+
+
+@router.get("/documents", response_model=list[RAGDocumentSummary])
+async def get_rag_documents():
+    """List unique indexed RAG documents."""
+    return await run_in_threadpool(list_documents)
+
+
+@router.delete("/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_rag_document(doc_id: str):
+    """Delete all indexed chunks for a document."""
+    deleted = await run_in_threadpool(delete_document, doc_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="RAG document not found.",
+        )
+    return None
 
 
 @router.post(
