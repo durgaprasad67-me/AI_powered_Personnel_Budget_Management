@@ -63,12 +63,22 @@ async def answer_with_rag(
 
     context_parts = []
     sources = []
+    source_chunks = []
 
-    for document, _score in matches:
+    for document, score in matches:
         context_parts.append(document.page_content)
 
         source = document.metadata.get("source", "Knowledge base")
         sources.append(source)
+        source_chunks.append(
+            {
+                "source": source,
+                "page": document.metadata.get("page"),
+                "chunk_index": document.metadata.get("chunk_index", 0),
+                "snippet": document.page_content[:200],
+                "score": score,
+            }
+        )
 
     context = "\n\n".join(context_parts)
 
@@ -88,4 +98,5 @@ async def answer_with_rag(
         "question": question,
         "answer": answer,
         "sources": list(dict.fromkeys(sources)),
+        "source_chunks": source_chunks,
     }
