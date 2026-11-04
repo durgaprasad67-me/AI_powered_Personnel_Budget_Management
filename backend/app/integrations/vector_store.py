@@ -37,6 +37,16 @@ def add_documents(documents: list[Document]) -> list[str]:
     return vector_store.add_documents(documents=documents)
 
 
+def replace_documents(doc_id: str, documents: list[Document]) -> list[str]:
+    """Replace all chunks for a document and return the new Chroma IDs."""
+    vector_store = get_vector_store()
+    existing = vector_store.get(where={"doc_id": doc_id})
+    existing_ids = existing.get("ids", [])
+    if existing_ids:
+        vector_store.delete(ids=existing_ids)
+    return vector_store.add_documents(documents=documents)
+
+
 async def retrieve_documents(
     question: str,
     k: int = 4,

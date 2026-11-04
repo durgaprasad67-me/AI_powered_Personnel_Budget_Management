@@ -1,5 +1,7 @@
+import hashlib
 import logging
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
@@ -43,6 +45,7 @@ async def index_knowledge_document(
 
     temp_path = None
     size = 0
+    content_hash = hashlib.sha256()
 
     try:
         with tempfile.NamedTemporaryFile(
@@ -62,6 +65,7 @@ async def index_knowledge_document(
                         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                         detail="Document exceeds the maximum allowed size.",
                     )
+                content_hash.update(chunk)
                 await temp_file.write(chunk)
 
         if size == 0:
@@ -74,6 +78,8 @@ async def index_knowledge_document(
             index_document,
             temp_path,
             filename,
+            content_hash.hexdigest(),
+            datetime.now(timezone.utc).isoformat(),
         )
         return DocumentIndexResponse(
             filename=filename,

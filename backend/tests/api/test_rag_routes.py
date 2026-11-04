@@ -29,7 +29,7 @@ def test_ask_rag_rejects_short_question(client):
 def test_index_document_calls_indexer(client, monkeypatch):
     monkeypatch.setattr(
         "app.api.v1.endpoints.rag.index_document",
-        lambda path, source_filename=None: {
+        lambda path, source_filename=None, doc_id=None, uploaded_at=None: {
             "filename": source_filename or path.name,
             "chunks_created": 2,
         },
@@ -55,8 +55,11 @@ def test_index_document_rejects_unsupported_extension(client):
 def test_real_txt_upload_keeps_filename(client, monkeypatch):
     captured = {}
     monkeypatch.setattr(
-        "app.services.rag.documents.add_documents",
-        lambda chunks: captured.setdefault("chunks", chunks),
+        "app.services.rag.documents.replace_documents",
+        lambda doc_id, chunks: (
+            captured.setdefault("chunks", chunks),
+            [f"chunk-{index}" for index, _ in enumerate(chunks)],
+        )[1],
     )
     response = client.post(
         "/api/v1/ai/rag/documents",

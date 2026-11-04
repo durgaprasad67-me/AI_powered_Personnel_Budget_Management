@@ -1,3 +1,5 @@
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 from langchain_community.document_loaders import (
@@ -10,7 +12,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.core.config import get_settings
-from app.integrations.vector_store import add_documents
+from app.integrations.vector_store import replace_documents
 
 SUPPORTED_EXTENSIONS = {
     ".pdf",
@@ -84,6 +86,8 @@ def split_documents(
 def index_document(
     file_path: str | Path,
     source_filename: str | None = None,
+    doc_id: str | None = None,
+    uploaded_at: str | None = None,
 ) -> dict[str, int | str]:
     """
     Load a document, split it into chunks, and index the chunks
@@ -115,11 +119,25 @@ def index_document(
             f"maximum allowed of {max_chunks}."
         )
 
-    add_documents(chunks)
+    document_id = doc_id or hashlib.sha256(Path(file_path).read_bytes()).hexdigest()
+    timestamp = uploaded_at or datetime.now(timezone.utc).isoformat()
+    embedding_model = get_settings().gemini_embedding_model
+    for chunk_index, chunk in enumerate(chunks):
+        chunk.metadata.update(
+            {
+                "doc_id": document_id,
+                "source": source_filename or Path(file_path).name,
+                "chunk_index": chunk_index,
+                "uploaded_at": timestamp,
+                "embedding_model": embedding_model,
+            }
+        )
+
+    chunk_ids = replace_documents(document_id, chunks)
 
     return {
         "filename": source_filename or Path(file_path).name,
-        "chunks_created": len(chunks),
+        "chunks_created": len(chunk_ids),
     }
 
 
@@ -147,9 +165,22 @@ def index_text(
             f"maximum allowed of {max_chunks}."
         )
 
-    add_documents(chunks)
+    document_id = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    timestamp = datetime.now(timezone.utc).isoformat()
+    embedding_model = get_settings().gemini_embedding_model
+    for chunk_index, chunk in enumerate(chunks):
+        chunk.metadata.update(
+            {
+                "doc_id": document_id,
+                "chunk_index": chunk_index,
+                "uploaded_at": timestamp,
+                "embedding_model": embedding_model,
+            }
+        )
+
+    chunk_ids = replace_documents(document_id, chunks)
 
     return {
         "source": source,
-        "chunks_created": len(chunks),
+        "chunks_created": len(chunk_ids),
     }
