@@ -52,22 +52,19 @@ async def answer_with_rag(
     Retrieve relevant documents and ask Gemini to answer
     using the retrieved context.
     """
-    documents = await retrieve_documents(question, k=k)
+    matches = await retrieve_documents(question, k=k)
 
-    if not documents:
+    if not matches:
         return {
             "question": question,
-            "answer": (
-                "I couldn't find relevant information in the "
-                "available knowledge base. Please provide more context."
-            ),
+            "answer": "I couldn't find that in your uploaded documents.",
             "sources": [],
         }
 
     context_parts = []
     sources = []
 
-    for document in documents:
+    for document, _score in matches:
         context_parts.append(document.page_content)
 
         source = document.metadata.get("source", "Knowledge base")

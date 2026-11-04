@@ -49,21 +49,28 @@ def replace_documents(doc_id: str, documents: list[Document]) -> list[str]:
 
 async def retrieve_documents(
     question: str,
-    k: int = 4,
-) -> list[Document]:
+    k: int | None = None,
+) -> list[tuple[Document, float]]:
     """Retrieve the most relevant document chunks for a question."""
     if not question.strip():
         return []
 
+    settings = get_settings()
+    k = settings.rag_top_k if k is None else min(k, settings.rag_top_k)
     if k < 1 or k > 20:
         raise ValueError("k must be between 1 and 20.")
 
     vector_store = get_vector_store()
 
-    return await vector_store.asimilarity_search(
+    matches = await vector_store.asimilarity_search_with_relevance_scores(
         query=question,
         k=k,
     )
+    return [
+        (document, score)
+        for document, score in matches
+        if score >= settings.rag_min_score
+    ]
 
 
 def delete_documents(document_ids: list[str]) -> None:

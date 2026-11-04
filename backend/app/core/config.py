@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     chroma_persist_directory: str = "./chroma_db"
     chroma_collection_name: str = "finsight_knowledge"
     rag_max_chunks: int = 2000
+    rag_top_k: int = 4
+    rag_min_score: float = 0.60
+    rag_chunk_size: int = 1000
+    rag_chunk_overlap: int = 150
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",

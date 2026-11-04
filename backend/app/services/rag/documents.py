@@ -62,10 +62,16 @@ def load_document(file_path: str | Path) -> list[Document]:
 
 def split_documents(
     documents: list[Document],
-    chunk_size: int = 1000,
-    chunk_overlap: int = 150,
+    chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
 ) -> list[Document]:
     """Split documents into smaller chunks for retrieval."""
+    settings = get_settings()
+    chunk_size = settings.rag_chunk_size if chunk_size is None else chunk_size
+    chunk_overlap = (
+        settings.rag_chunk_overlap if chunk_overlap is None else chunk_overlap
+    )
+
     if chunk_size < 1:
         raise ValueError("chunk_size must be greater than zero.")
 
