@@ -87,11 +87,13 @@ class BudgetRepository:
         if category:
             query["category"] = category
 
-        spent_amount = 0.0
-        cursor = self.transactions.find(query, {"amount": 1})
-        async for transaction in cursor:
-            spent_amount += float(transaction["amount"])
-        return round(spent_amount, 2)
+        pipeline = [
+            {"$match": query},
+            {"$group": {"_id": None, "total": {"$sum": "$amount"}}},
+        ]
+        cursor = await self.transactions.aggregate(pipeline)
+        rows = await cursor.to_list(length=1)
+        return round(float(rows[0]["total"]) if rows else 0.0, 2)
 
 
 def period_end(start: Date, period: str) -> Date:
