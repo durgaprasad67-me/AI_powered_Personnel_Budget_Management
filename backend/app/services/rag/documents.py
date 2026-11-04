@@ -9,6 +9,7 @@ from langchain_community.document_loaders import (
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.core.config import get_settings
 from app.integrations.vector_store import add_documents
 
 SUPPORTED_EXTENSIONS = {
@@ -107,6 +108,13 @@ def index_document(
             "chunks_created": 0,
         }
 
+    max_chunks = get_settings().rag_max_chunks
+    if len(chunks) > max_chunks:
+        raise ValueError(
+            f"Document produces {len(chunks)} chunks, exceeding the "
+            f"maximum allowed of {max_chunks}."
+        )
+
     add_documents(chunks)
 
     return {
@@ -132,6 +140,13 @@ def index_text(
     )
 
     chunks = split_documents([document])
+    max_chunks = get_settings().rag_max_chunks
+    if len(chunks) > max_chunks:
+        raise ValueError(
+            f"Document produces {len(chunks)} chunks, exceeding the "
+            f"maximum allowed of {max_chunks}."
+        )
+
     add_documents(chunks)
 
     return {

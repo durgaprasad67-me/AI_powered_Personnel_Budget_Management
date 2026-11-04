@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     chroma_persist_directory: str = "./chroma_db"
     chroma_collection_name: str = "finsight_knowledge"
+    rag_max_chunks: int = 2000
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
