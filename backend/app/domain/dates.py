@@ -1,14 +1,25 @@
 from datetime import date as Date
 from datetime import datetime, timedelta, timezone
 
+from app.core.config import get_settings
+
 IST = timezone(timedelta(hours=5, minutes=30))
-MIN_DATE = Date(2000, 1, 1)
-MAX_DAYS_AHEAD = 365
 
 
 def today_ist() -> Date:
     """Return today's date in Indian Standard Time."""
     return datetime.now(IST).date()
+
+
+def get_date_floor() -> Date:
+    """Dynamic past date floor based on configured number of years."""
+    current = today_ist()
+    years = get_settings().transaction_date_floor_years
+    try:
+        return current.replace(year=current.year - years)
+    except ValueError:
+        # Handle Feb 29 leap day fallback
+        return current.replace(year=current.year - years, day=28)
 
 
 def parse_date_text(value):
@@ -41,9 +52,26 @@ def date_or_today(value):
 
 
 def check_date_range(value: Date) -> Date:
-    """Validate the supported transaction date range."""
-    if value < MIN_DATE or value > today_ist() + timedelta(days=MAX_DAYS_AHEAD):
+    """Validate that date is not in the future and not older than dynamic floor."""
+    current_today = today_ist()
+    if value > current_today:
+        raise ValueError("Transaction date cannot be in the future.")
+
+    floor_date = get_date_floor()
+    if value < floor_date:
+        years = get_settings().transaction_date_floor_years
         raise ValueError(
-            "Date must be on or after 2000-01-01 and no more than one year ahead."
+            f"Transaction date cannot be older than {years} years ({floor_date.isoformat()})."
+        )
+    return value
+
+
+def check_plan_date(value: Date) -> Date:
+    """Validate that budget or goal date is not older than dynamic floor (future dates are allowed)."""
+    floor_date = get_date_floor()
+    if value < floor_date:
+        years = get_settings().transaction_date_floor_years
+        raise ValueError(
+            f"Date cannot be older than {years} years ({floor_date.isoformat()})."
         )
     return value

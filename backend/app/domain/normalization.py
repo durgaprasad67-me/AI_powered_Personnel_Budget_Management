@@ -3,11 +3,19 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from app.domain.transaction_types import TYPE_ALIASES
 
-MAX_AMOUNT = 100_000_000
+import math
+import re
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
+from app.core.config import get_settings
+from app.domain.transaction_types import TYPE_ALIASES
+
 CURRENCY_JUNK = re.compile(
     r"₹|[$€£,]|\b(?:rs\.?|inr)(?=\s|\d|$)|\s+",
     re.IGNORECASE,
 )
+HTML_TAGS = re.compile(r"<[^>]*>")
+CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 def clean_spaces(value):
@@ -24,6 +32,40 @@ def clean_lower(value):
     return value
 
 
+def normalize_category(value) -> str:
+    """Normalize category: required, trimmed, collapsed spaces, lowercase, 2-30 chars."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValueError("Category is required.")
+    if not isinstance(value, str):
+        raise ValueError("Category must be text.")
+    normalized = clean_lower(value)
+    settings = get_settings()
+    if len(normalized) < settings.category_min_length or len(normalized) > settings.category_max_length:
+        raise ValueError(
+            f"Category must be between {settings.category_min_length} and "
+            f"{settings.category_max_length} characters."
+        )
+    return normalized
+
+
+def clean_description(value) -> str:
+    """Sanitize description: optional, max 200 chars, strip control characters & HTML."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = str(value)
+    # Strip HTML tags and control characters to prevent injection
+    text = HTML_TAGS.sub("", value)
+    text = CONTROL_CHARS.sub("", text)
+    cleaned = clean_spaces(text)
+    settings = get_settings()
+    if len(cleaned) > settings.description_max_length:
+        raise ValueError(
+            f"Description must not exceed {settings.description_max_length} characters."
+        )
+    return cleaned
+
+
 def normalize_type(value):
     """Normalize aliases to canonical transaction types."""
     if isinstance(value, str):
@@ -33,31 +75,42 @@ def normalize_type(value):
 
 
 def parse_amount(value):
-    """Accept numbers and currency strings such as ₹1,200.50."""
+    """Accept numbers and currency strings such as ₹1,200.50, rejecting scientific notation."""
     if isinstance(value, bool):
         raise ValueError("Amount must be a number.")
 
+    if isinstance(value, (int, float)):
+        # Check for NaN / Infinity
+        if math.isnan(value) or math.isinf(value):
+            raise ValueError("Amount must be a finite number.")
+
     if isinstance(value, str):
-        return CURRENCY_JUNK.sub("", value.strip())
+        # Reject scientific notation
+        if re.search(r"[eE]", value):
+            raise ValueError("Scientific notation is not permitted for amounts.")
+        cleaned = CURRENCY_JUNK.sub("", value.strip())
+        if not cleaned:
+            raise ValueError("Amount is required.")
+        return cleaned
 
     return value
 
 
 def round_amount(value: float) -> float:
-    """Round an amount to two decimal places."""
-    rounded = float(
-        Decimal(str(value)).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP,
-        )
-    )
+    """Validate amount using Decimal-safe handling and round to 2 decimal places."""
+    try:
+        dec = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError("Invalid transaction amount.") from exc
 
-    if rounded <= 0:
-        raise ValueError("Amount must be at least 0.01.")
-    if rounded > MAX_AMOUNT:
-        raise ValueError("Amount exceeds the permitted maximum.")
+    if not dec.is_finite():
+        raise ValueError("Transaction amount must be finite.")
 
-    return rounded
+    rounded_dec = dec.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if rounded_dec <= Decimal("0"):
+        raise ValueError("Amount must be greater than 0.")
+
+    return float(rounded_dec)
 
 
 def _unwrap_negative_amount(text: str) -> tuple[str, bool]:

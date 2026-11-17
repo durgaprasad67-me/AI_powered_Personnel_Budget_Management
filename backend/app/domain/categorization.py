@@ -12,6 +12,7 @@ CATEGORY_KEYWORDS = {
     "entertainment": "movie netflix spotify hotstar concert game",
     "health": "doctor medicine pharmacy hospital medical clinic gym",
     "education": "course books tuition fees exam udemy",
+    "home": "household purifier filter waterpurifier waterpurifierfilter utensils utensil kitchen kitchenutensils appliance furniture cleaning decor",
     "salary": "salary stipend payroll wages",
     "freelance": "freelance client invoice",
     "interest": "interest dividend",
@@ -29,10 +30,10 @@ CATEGORY_DEFAULT_TYPE = {
 }
 TYPE_HINT_WORDS = {
     "investment_return": "redeemed redemption matured maturity",
-    "loan_taken": "borrowed disbursed",
+    "loan_taken": "borrow borrowed took taken received disbursed",
     "loan_repaid": "emi installment instalment repayment repaid",
-    "loan_given": "lent",
-    "loan_collected": "collected recovered",
+    "loan_given": "lend lent",
+    "loan_collected": "collect collected collection recovered",
 }
 TYPE_DEFAULT_CATEGORY = {
     "investment": "investment",
@@ -66,7 +67,27 @@ def words_in(*texts) -> list[str]:
 
 def guess_category(description) -> str:
     """Guess a category using known description keywords."""
-    for word in words_in(description):
+    words = words_in(description)
+    if any(
+        word in words
+        for word in {
+            "household",
+            "purifier",
+            "filter",
+            "waterpurifier",
+            "waterpurifierfilter",
+            "utensils",
+            "utensil",
+            "kitchen",
+            "kitchenutensils",
+            "appliance",
+            "furniture",
+            "cleaning",
+            "decor",
+        }
+    ) or ("home" in words and not {"loan", "emi"} & set(words)):
+        return "home"
+    for word in words:
         category = KEYWORD_TO_CATEGORY.get(word)
         if category:
             return category
@@ -75,11 +96,32 @@ def guess_category(description) -> str:
 
 def guess_type(category, description) -> str:
     """Guess a transaction type using hints and category defaults."""
-    for word in words_in(description):
-        if word in TYPE_HINTS:
+    normalized_category = clean_lower(category)
+    description_words = set(words_in(description))
+    loan_context = normalized_category in {"loan", "loan return"} or bool(
+        description_words
+        & {
+            "loan", "emi", "borrow", "borrowed", "lender", "lending",
+            "repayment", "repayments",
+        }
+    )
+    if loan_context:
+        # Specific loan actions determine cash direction and must be tested
+        # before the generic "loan" category default.
+        loan_actions = (
+            ("loan_repaid", {"emi", "installment", "instalment", "repayment", "repayments", "repaid", "paid"}),
+            ("loan_collected", {"collect", "collected", "collection", "recovered", "recover"}),
+            ("loan_given", {"lend", "lent", "given"}),
+            ("loan_taken", {"borrow", "borrowed", "took", "take", "taken", "received", "disbursed"}),
+        )
+        for transaction_type, action_words in loan_actions:
+            if description_words & action_words:
+                return transaction_type
+
+    for word in description_words:
+        if word in TYPE_HINTS and not TYPE_HINTS[word].startswith("loan_"):
             return TYPE_HINTS[word]
 
-    normalized_category = clean_lower(category)
     if normalized_category in CATEGORY_DEFAULT_TYPE:
         return CATEGORY_DEFAULT_TYPE[normalized_category]
 

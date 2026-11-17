@@ -1,7 +1,6 @@
 """Runtime audit checks for MongoDB indexes and the configured RAG store."""
 
 import asyncio
-import hashlib
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,14 +10,18 @@ from bson import ObjectId
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import get_settings
+from app.core.user_context import DEFAULT_CURRENT_USER_ID
 from app.db.client import close_database, get_database
 from app.db.collections import BUDGETS, FINANCIAL_GOALS, TRANSACTIONS
+from app.integrations.llm import LLMNotConfiguredError, get_gemini_key_pool
 from app.integrations.vector_store import (
+    count_vectors_by_source_type,
     delete_documents,
+    get_collection_metadata,
     get_vector_store,
     retrieve_documents,
 )
-from app.services.rag.documents import index_text
+from app.services.rag.documents import index_text, stable_document_id
 
 COLLECTIONS = (TRANSACTIONS, BUDGETS, FINANCIAL_GOALS)
 MARKER = "finsight_audit_marker_20261104"
@@ -201,7 +204,7 @@ async def explain_queries(database: Any) -> None:
             flag = "COLLSCAN" if "COLLSCAN" in stage_names else ""
             print(f"{name}: winning_stage={stage} {flag}")
         except Exception as exc:
-            print(f"{name}: EXPLAIN FAILED ({type(exc).__name__}: {exc})")
+            print(f"{name}: EXPLAIN FAILED ({type(exc).__name__})")
 
 
 async def rag_smoke_test() -> None:
@@ -215,17 +218,31 @@ async def rag_smoke_test() -> None:
     indexed_ids: list[str] = []
     try:
         text = f"This audit document contains the unique word {MARKER}."
-        result = index_text(text, source=f"{MARKER}.txt")
+        result = index_text(
+            text,
+            source=f"{MARKER}.txt",
+            user_id=DEFAULT_CURRENT_USER_ID,
+        )
         print(f"indexed: {result}")
         store = get_vector_store()
+        print(f"collection_metadata={get_collection_metadata()}")
+        print(f"vector_counts_by_source_type={count_vectors_by_source_type()}")
+        try:
+            print(f"gemini_key_pool_status={get_gemini_key_pool().status()}")
+        except LLMNotConfiguredError:
+            print("gemini_key_pool_status=[] (not configured)")
         stored = store.get(where={"source": f"{MARKER}.txt"})
         indexed_ids = list(stored.get("ids", []))
-        documents = await retrieve_documents(MARKER, k=4)
+        documents = await retrieve_documents(
+            MARKER,
+            k=4,
+            user_id=DEFAULT_CURRENT_USER_ID,
+        )
         marker_found = any(
             MARKER in document.page_content for document, _score in documents
         )
         print(f"retrieved_chunks={len(documents)} marker_found={marker_found}")
-        doc_id = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        doc_id = stable_document_id(f"{MARKER}.txt")
         for label, questions in {
             "relevant": (
                 "What unique word appears in the audit document?",
@@ -240,7 +257,12 @@ async def rag_smoke_test() -> None:
                 matches = await store.asimilarity_search_with_relevance_scores(
                     question,
                     k=1,
-                    filter={"doc_id": doc_id},
+                    filter={
+                        "$and": [
+                            {"doc_id": doc_id},
+                            {"user_id": DEFAULT_CURRENT_USER_ID},
+                        ]
+                    },
                 )
                 scores = [round(score, 6) for _, score in matches]
                 print(f"{label}: question={question!r} scores={scores}")

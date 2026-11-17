@@ -11,8 +11,7 @@ from pydantic import (
 from app.schemas.types import (
     Amount,
     Category,
-    CreateDate,
-    UpdateDate,
+    PlanDate,
 )
 
 BudgetPeriod = Literal[
@@ -22,38 +21,45 @@ BudgetPeriod = Literal[
     "yearly",
     "custom",
 ]
+BudgetTransactionType = Literal[
+    "all",
+    "expense",
+    "income",
+    "investment",
+    "investment_return",
+    "loan_taken",
+    "loan_repaid",
+    "loan_given",
+    "loan_collected",
+]
 
 
 # CREATE BUDGET
 class BudgetCreate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
-    name: str = Field(min_length=1, max_length=100)
+    name: str = Field(default="Budget", min_length=1, max_length=100)
 
     # None means the budget covers all eligible categories.
     category: Category | None = None
+    transaction_type: BudgetTransactionType = "expense"
 
     amount: Amount
 
-    period: BudgetPeriod = "monthly"
-
-    start_date: CreateDate
-    end_date: CreateDate | None = None
+    start_date: PlanDate
+    end_date: PlanDate | None = None
 
     @model_validator(mode="after")
     def validate_budget_dates(self):
         if self.end_date is not None and self.end_date < self.start_date:
             raise ValueError("end_date must be on or after start_date.")
 
-        if self.period == "custom" and self.end_date is None:
-            raise ValueError("Custom budgets require an end_date.")
-
         return self
 
 
 # UPDATE BUDGET
 class BudgetUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     name: str | None = Field(
         default=None,
@@ -62,10 +68,10 @@ class BudgetUpdate(BaseModel):
     )
 
     category: Category | None = None
+    transaction_type: BudgetTransactionType | None = None
     amount: Amount | None = None
-    period: BudgetPeriod | None = None
-    start_date: UpdateDate | None = None
-    end_date: UpdateDate | None = None
+    start_date: PlanDate | None = None
+    end_date: PlanDate | None = None
 
 
 # BUDGET RESPONSE
@@ -74,11 +80,11 @@ class BudgetResponse(BaseModel):
 
     id: str = Field(min_length=1)
 
-    name: str
+    name: str = "Budget"
     category: Category | None = None
+    transaction_type: BudgetTransactionType = "expense"
 
     amount: Amount
-    period: BudgetPeriod
 
     start_date: Date
     end_date: Date | None = None

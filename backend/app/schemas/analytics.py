@@ -30,6 +30,8 @@ class MonthlyAnalyticsSummary(BaseModel):
 
 
 class DashboardResponse(MonthlyAnalyticsSummary):
+    allocated_budget: float = Field(ge=0)
+    available_allocated_budget: float = Field(ge=0)
     transactions: list[TransactionResponse] = Field(default_factory=list)
     budgets: list[BudgetResponse] = Field(default_factory=list)
     goals: list[FinancialGoalResponse] = Field(default_factory=list)

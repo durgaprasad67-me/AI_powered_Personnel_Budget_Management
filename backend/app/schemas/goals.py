@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.types import Amount, UpdateDate
+from app.schemas.types import Amount, PlanDate
 
 GoalStatus = Literal[
     "active",
@@ -28,7 +28,7 @@ class FinancialGoalCreate(BaseModel):
         le=100_000_000,
         allow_inf_nan=False,
     )
-    target_date: UpdateDate | None = None
+    target_date: PlanDate | None = None
 
 
 # UPDATE FINANCIAL GOAL
@@ -50,7 +50,7 @@ class FinancialGoalUpdate(BaseModel):
         le=100_000_000,
         allow_inf_nan=False,
     )
-    target_date: UpdateDate | None = None
+    target_date: PlanDate | None = None
     status: GoalStatus | None = None
 
 

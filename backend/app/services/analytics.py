@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Any
 
 from app.core.exceptions import InvalidInputError
+from app.core.user_context import DEFAULT_CURRENT_USER_ID
 from app.domain.transaction_types import (
     CASH_IN_TYPES,
     CASH_OUT_TYPES,
@@ -65,7 +66,12 @@ class AnalyticsService:
     def __init__(self, repository: AnalyticsRepository):
         self.repository = repository
 
-    async def monthly_summary(self, month: str) -> dict[str, Any]:
+    async def monthly_summary(
+        self,
+        month: str,
+        *,
+        user_id: str = DEFAULT_CURRENT_USER_ID,
+    ) -> dict[str, Any]:
         year, month_number = int(month[:4]), int(month[5:])
         next_year, next_month = (
             (year + 1, 1) if month_number == 12 else (year, month_number + 1)
@@ -73,6 +79,7 @@ class AnalyticsService:
         rows = await self.repository.grouped_rows(
             start_date=Date(year, month_number, 1),
             end_date=Date(next_year, next_month, 1) - timedelta(days=1),
+            user_id=user_id,
         )
         return build_monthly_summary(month, rows)
 
@@ -80,6 +87,8 @@ class AnalyticsService:
         self,
         start_date: Date,
         end_date: Date,
+        *,
+        user_id: str = DEFAULT_CURRENT_USER_ID,
     ) -> SpendingSummary:
         if start_date > end_date:
             raise InvalidInputError("start_date must not be after end_date.")
@@ -87,6 +96,7 @@ class AnalyticsService:
         rows = await self.repository.grouped_rows(
             start_date=start_date,
             end_date=end_date,
+            user_id=user_id,
         )
         totals = dict.fromkeys(TRANSACTION_TYPES, 0.0)
         categories: dict[str, dict[str, float | int]] = {}

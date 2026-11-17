@@ -172,6 +172,62 @@ h1 {
   background: #edf6fd;
 }
 
+.document-upload {
+  display: grid;
+  gap: 8px;
+  margin: 16px 38px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+
+.document-upload > label {
+  color: #4b5a70;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-row input {
+  min-width: 0;
+  flex: 1;
+}
+
+.upload-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #dce8f1;
+  border-radius: 9px;
+  color: #315675;
+  background: #fff;
+  font-weight: 700;
+}
+
+.upload-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+#uploadStatus {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#uploadStatus.error {
+  color: #c65e5e;
+}
+
+#uploadStatus.success {
+  color: #347f68;
+}
+
 .conversation {
   display: grid;
   gap: 16px;
@@ -213,6 +269,32 @@ h1 {
   background: #f8fafc;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.source-details {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e4ebf2;
+  font-size: 12px;
+}
+
+.source-details summary {
+  color: #477ca9;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.source-details ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.source-details li,
+.source-details p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .message.user .bubble {
@@ -310,6 +392,16 @@ textarea:focus {
   .question-form {
     padding-left: 18px;
     padding-right: 18px;
+  }
+
+  .document-upload {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+
+  .upload-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .input-row {

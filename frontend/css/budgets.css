@@ -2,3 +2,51 @@
 .budget-card h2 { margin: 0; }
 .budget-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
 .budget-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.budget-card .budget-meta:first-of-type { gap: 12px; align-items: center; }
+.budget-card .budget-meta:first-of-type span { text-transform: capitalize; }
+
+.budget-warning-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 28, 42, .58);
+  backdrop-filter: blur(4px);
+}
+
+.budget-warning-modal[hidden] { display: none; }
+
+.budget-warning-card {
+  width: min(460px, 100%);
+  padding: 30px;
+  border: 1px solid #f0d7d4;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(17, 28, 42, .25);
+  text-align: center;
+}
+
+.budget-warning-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff0ef;
+  color: #b94b45;
+  font: 800 24px Manrope, sans-serif;
+}
+
+.budget-warning-card h2 {
+  margin: 0;
+  color: #253247;
+}
+
+.budget-warning-card p {
+  margin: 12px 0 24px;
+  color: #6f7d8c;
+  line-height: 1.6;
+}

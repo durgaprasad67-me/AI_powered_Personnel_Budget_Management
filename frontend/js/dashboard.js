@@ -28,6 +28,8 @@ let cashflowChartInstance = null;
 let spendingChartInstance = null;
 let dashboardData = null;
 let toastTimeout = null;
+const NOTIFICATION_STORAGE_KEY = "finsight.dashboard.notifications";
+let notifications = [];
 
 /* =========================================
    DOM Utilities
@@ -42,6 +44,82 @@ const setText = (id, value) => {
     element.textContent = value;
   }
 };
+
+function readNotifications() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEY) || "[]");
+    return Array.isArray(stored) ? stored : [];
+  } catch (error) {
+    console.warn("Unable to read stored notifications:", error);
+    return [];
+  }
+}
+
+function saveNotifications() {
+  localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifications));
+}
+
+function updateNotificationCount() {
+  const badge = getElement("notificationCount");
+  if (!badge) return;
+  const unread = notifications.filter((item) => !item.seen).length;
+  badge.textContent = String(unread);
+  badge.hidden = unread === 0;
+  getElement("notifyBtn")?.classList.toggle("has-notifications", unread > 0);
+}
+
+function renderNotifications() {
+  const list = getElement("notificationList");
+  if (!list) return;
+  list.replaceChildren();
+  if (!notifications.length) {
+    list.innerHTML = '<div class="notification-empty"><i data-lucide="bell-off"></i><strong>No alerts</strong><span>You have no budget alerts right now.</span></div>';
+  } else {
+    notifications.slice().reverse().forEach((notification) => {
+      const item = document.createElement("article");
+      item.className = `notification-item${notification.seen ? " seen" : ""}`;
+      item.innerHTML = `<label class="notification-check"><input type="checkbox" data-notification-id="${notification.id}" aria-label="Select notification"></label><div class="notification-icon"><i data-lucide="${notification.severity === "danger" ? "triangle-alert" : "bell-ring"}"></i></div><div class="notification-copy"><strong>${notification.title}</strong><p>${notification.message}</p><small>${notification.seen ? "Seen" : "New"} · ${notification.createdAt}</small></div><button class="notification-delete" type="button" aria-label="Delete notification"><i data-lucide="trash-2"></i></button>`;
+      item.querySelector(".notification-delete").addEventListener("click", () => {
+        notifications = notifications.filter((entry) => entry.id !== notification.id);
+        saveNotifications();
+        renderNotifications();
+        updateNotificationCount();
+      });
+      list.appendChild(item);
+    });
+  }
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function addBudgetNotifications(data) {
+  const thresholds = [50, 75, 100];
+  const existing = new Set(notifications.map((item) => item.id));
+  await Promise.all((data.budgets || []).map(async (budget) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/budgets/${encodeURIComponent(budget.id)}/progress`);
+      if (!response.ok) return;
+      const usage = await response.json();
+      thresholds.forEach((threshold) => {
+        const id = `${budget.id}:${data.month}:${threshold}`;
+        if (Number(usage.percentage_used) >= threshold && !existing.has(id)) {
+          notifications.push({
+            id,
+            seen: false,
+            severity: threshold === 100 ? "danger" : "warning",
+            title: `${budget.category || "Budget"} reached ${threshold}%`,
+            message: `${amount(usage.spent_amount)} used of ${amount(usage.budget_amount)}. ${threshold === 100 ? "The budget limit has been reached." : "Review your spending to stay within the limit."}`,
+            createdAt: new Date().toLocaleString("en-IN"),
+          });
+          existing.add(id);
+        }
+      });
+    } catch (error) {
+      console.warn("Unable to load budget alert:", error);
+    }
+  }));
+  saveNotifications();
+  updateNotificationCount();
+}
 
 const amount = (value) => currency.format(Number(value || 0));
 
@@ -58,13 +136,15 @@ function showToast(message) {
   }
 
   toast.textContent = message;
+  toast.classList.add("error");
+  toast.setAttribute("role", "alert");
   toast.classList.add("show");
 
   clearTimeout(toastTimeout);
 
   toastTimeout = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 3000);
+    toast.classList.remove("show", "error");
+  }, 6500);
 }
 
 /* =========================================
@@ -83,9 +163,13 @@ function updateGreeting() {
   }
 
   const nameElement = document.querySelector("[data-user-name]");
-  const userName = nameElement?.textContent.trim() || "User";
-
-  setText("greetingTitle", `${greeting}, ${userName} 👋`);
+  const userName = nameElement?.textContent.trim() || "Personal account";
+  setText(
+    "greetingTitle",
+    userName && userName !== "Personal account"
+      ? `${greeting}, ${userName}`
+      : `${greeting} — here's your financial snapshot`,
+  );
 
   document.querySelectorAll("[data-user-initial]").forEach((element) => {
     element.textContent = userName.charAt(0).toUpperCase();
@@ -119,18 +203,33 @@ function renderSummary(summary) {
   );
 
   const balance = Number(summary.balance || 0);
+  const availableCash = Number(summary.net_cash_flow ?? balance);
+  const cashIn = income
+    + Number(summary.investments?.returned || 0)
+    + Number(summary.loans?.borrowed || 0)
+    + Number(summary.loans?.collected || 0);
+  const cashOut = expenses
+    + Number(summary.investments?.invested || 0)
+    + Number(summary.loans?.repaid || 0)
+    + Number(summary.loans?.lent || 0);
+  const loanCashOut = Number(summary.loans?.repaid || 0)
+    + Number(summary.loans?.lent || 0);
+  const investmentCashOut = Number(summary.investments?.invested || 0);
 
-  const loanPayments = Number(
-    summary.loans?.repaid || 0,
-  );
+  const netLoanCashFlow = Number(summary.loans?.borrowed || 0)
+    + Number(summary.loans?.collected || 0)
+    - Number(summary.loans?.repaid || 0)
+    - Number(summary.loans?.lent || 0);
 
   const denominator = income || 1;
 
-  setText("availableValue", amount(balance));
+  setText("availableValue", amount(availableCash));
   setText("incomeValue", amount(income));
   setText("expenseValue", amount(expenses));
   setText("investmentValue", amount(invested));
-  setText("loanValue", amount(loanPayments));
+  setText("loanValue", amount(netLoanCashFlow));
+  setText("allocatedValue", amount(summary.allocated_budget || 0));
+  setText("availableAllocatedValue", amount(summary.available_allocated_budget || 0));
 
   setText("categoryTotal", amount(expenses));
 
@@ -141,17 +240,17 @@ function renderSummary(summary) {
 
   setText(
     "spentPercent",
-    `${Math.round((expenses / denominator) * 100)}%`,
+    `${cashIn > 0 ? Math.round(((expenses + loanCashOut) / cashIn) * 100) : 0}%`,
   );
 
   setText(
     "investedPercent",
-    `${Math.round((invested / denominator) * 100)}%`,
+    `${cashIn > 0 ? Math.round((investmentCashOut / cashIn) * 100) : 0}%`,
   );
 
   setText(
     "availablePercent",
-    `${Math.max(0, Math.round((balance / denominator) * 100))}%`,
+    `${cashIn > 0 ? Math.max(0, Math.round((availableCash / cashIn) * 100)) : 0}%`,
   );
 
   const monthLabel = getMonthLabel(summary.month || selectedMonth);
@@ -160,7 +259,7 @@ function renderSummary(summary) {
   setText("dateLabel", monthLabel);
 
   renderCategoryLegend(summary.category_breakdown || {});
-  renderHeroProgress(expenses, invested, balance, income);
+  renderHeroProgress(expenses, Number(summary.investments?.invested || 0), availableCash, cashIn, cashOut);
 }
 
 /* =========================================
@@ -202,26 +301,27 @@ function renderCategoryLegend(categoryBreakdown) {
    Hero Progress Bar
 ========================================= */
 
-function renderHeroProgress(expenses, invested, balance, income) {
+function renderHeroProgress(expenses, invested, balance, cashIn, cashOut) {
   const progress = document.querySelector(".hero-progress");
 
   if (!progress) return;
 
-  const totalIncome = income || 1;
+  const totalCashIn = cashIn || 1;
+  const loanCashOut = Math.max(0, cashOut - expenses - invested);
 
   const spentPercentage = Math.max(
     0,
-    Math.min(100, (expenses / totalIncome) * 100),
+    Math.min(100, ((expenses + loanCashOut) / totalCashIn) * 100),
   );
 
   const investedPercentage = Math.max(
     0,
-    Math.min(100 - spentPercentage, (invested / totalIncome) * 100),
+    Math.min(100 - spentPercentage, (invested / totalCashIn) * 100),
   );
 
   const availablePercentage = Math.max(
     0,
-    100 - spentPercentage - investedPercentage,
+    Math.min(100 - spentPercentage - investedPercentage, Math.max(0, (balance / totalCashIn) * 100)),
   );
 
   const spans = progress.querySelectorAll("span");
@@ -381,7 +481,7 @@ function renderSpendingChart(categoryBreakdown) {
 
 function renderDashboardLists(data) {
   renderTransactions(data.transactions || []);
-  renderBudgets(data.budgets || [], data.category_breakdown || {});
+  renderBudgets(data.budgets || [], data.category_breakdown || {}, data.transactions || []);
   renderGoals(data.goals || []);
 
   if (window.lucide) {
@@ -436,7 +536,7 @@ function renderTransactions(transactions) {
   });
 }
 
-function renderBudgets(budgets, categoryBreakdown) {
+function renderBudgets(budgets, categoryBreakdown, transactions = []) {
   const list = getElement("budgetList");
 
   if (!list) return;
@@ -457,9 +557,20 @@ function renderBudgets(budgets, categoryBreakdown) {
     const percentage = document.createElement("div");
     const track = document.createElement("div");
     const fill = document.createElement("span");
-    const spent = Number(
-      categoryBreakdown[String(budget.category || "").toLowerCase()] || 0,
-    );
+    const spent = transactions
+      .filter((transaction) => {
+        const category = String(transaction.category || "").toLowerCase();
+        const budgetCategory = String(budget.category || "").toLowerCase();
+        const categoryMatches = !budgetCategory
+          || category === budgetCategory
+          || (budgetCategory === "investment return" && category === "investment")
+          || (budgetCategory === "loan return" && category === "loan");
+        const typeMatches = !budget.transaction_type
+          || budget.transaction_type === "all"
+          || transaction.transaction_type === budget.transaction_type;
+        return categoryMatches && typeMatches;
+      })
+      .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
     const limit = Number(budget.amount || 0);
     const percentageUsed = limit > 0
       ? Math.min(100, (spent / limit) * 100)
@@ -468,10 +579,10 @@ function renderBudgets(budgets, categoryBreakdown) {
     item.className = "budget-item";
     top.className = "budget-top";
     name.className = "budget-name";
-    name.textContent = budget.name || "Budget";
+    name.textContent = budget.category || "All categories";
     budgetAmount.className = "budget-amount";
     budgetAmount.textContent =
-      `${amount(spent)} spent of ${amount(limit)} · ${budget.period || "monthly"}`;
+      `${amount(spent)} spent of ${amount(limit)}`;
     percentage.className = "budget-percent";
     percentage.textContent = `${Math.round(percentageUsed)}%`;
     track.className = "track";
@@ -569,6 +680,7 @@ async function loadDashboard(month = selectedMonth) {
 
     renderSummary(data);
     renderDashboardLists(data);
+    await addBudgetNotifications(data);
 
     renderSpendingChart(data.category_breakdown || {});
 
@@ -795,8 +907,43 @@ function initializeNotifications() {
 
   if (!notifyButton) return;
 
+  notifications = readNotifications();
+  updateNotificationCount();
   notifyButton.addEventListener("click", () => {
-    showToast("You are all caught up! No new notifications.");
+    notifications = notifications.map((item) => ({ ...item, seen: true }));
+    saveNotifications();
+    updateNotificationCount();
+    renderNotifications();
+    getElement("notificationModal").hidden = false;
+  });
+  getElement("closeNotifications")?.addEventListener("click", () => {
+    getElement("notificationModal").hidden = true;
+  });
+  getElement("notificationModal")?.addEventListener("click", (event) => {
+    if (event.target === getElement("notificationModal")) getElement("notificationModal").hidden = true;
+  });
+  getElement("deleteAllNotifications")?.addEventListener("click", () => {
+    notifications = [];
+    saveNotifications();
+    renderNotifications();
+    updateNotificationCount();
+  });
+  getElement("selectAllNotifications")?.addEventListener("change", (event) => {
+    document.querySelectorAll("#notificationList input[data-notification-id]").forEach((input) => {
+      input.checked = event.target.checked;
+    });
+  });
+  getElement("deleteSelectedNotifications")?.addEventListener("click", () => {
+    const selected = new Set(
+      [...document.querySelectorAll("#notificationList input[data-notification-id]:checked")]
+        .map((input) => input.dataset.notificationId),
+    );
+    notifications = notifications.filter((item) => !selected.has(item.id));
+    saveNotifications();
+    renderNotifications();
+    updateNotificationCount();
+    const selectAll = getElement("selectAllNotifications");
+    if (selectAll) selectAll.checked = false;
   });
 }
 
@@ -892,13 +1039,12 @@ function exportDashboardCSV() {
   });
 
   rows.push([], ["Budgets"]);
-  rows.push(["Name", "Amount", "Period"]);
+  rows.push(["Category", "Amount"]);
 
   (dashboardData.budgets || []).forEach((budget) => {
     rows.push([
-      budget.name || "",
+      budget.category || "All categories",
       budget.amount || 0,
-      budget.period || "",
     ]);
   });
 

@@ -3,24 +3,25 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BeforeValidator, Field
 
-from app.domain.dates import check_date_range, date_or_today, parse_date_text
+from app.domain.dates import (
+    check_date_range,
+    check_plan_date,
+    date_or_today,
+    parse_date_text,
+)
 from app.domain.normalization import (
-    MAX_AMOUNT,
-    clean_lower,
-    clean_spaces,
+    clean_description,
+    normalize_category,
     normalize_type,
     parse_amount,
     round_amount,
 )
 from app.domain.transaction_types import TransactionTypeName
 
-MAX_DESCRIPTION_LENGTH = 200
-MAX_CATEGORY_LENGTH = 50
-
 Amount = Annotated[
     float,
     BeforeValidator(parse_amount),
-    Field(gt=0, le=MAX_AMOUNT, allow_inf_nan=False),
+    Field(gt=0, allow_inf_nan=False),
     AfterValidator(round_amount),
 ]
 TransactionType = Annotated[
@@ -29,13 +30,11 @@ TransactionType = Annotated[
 ]
 Category = Annotated[
     str,
-    BeforeValidator(clean_lower),
-    Field(min_length=1, max_length=MAX_CATEGORY_LENGTH),
+    BeforeValidator(normalize_category),
 ]
 Description = Annotated[
     str,
-    BeforeValidator(clean_spaces),
-    Field(min_length=1, max_length=MAX_DESCRIPTION_LENGTH),
+    BeforeValidator(clean_description),
 ]
 CreateDate = Annotated[
     Date,
@@ -46,4 +45,9 @@ UpdateDate = Annotated[
     Date,
     BeforeValidator(parse_date_text),
     AfterValidator(check_date_range),
+]
+PlanDate = Annotated[
+    Date,
+    BeforeValidator(parse_date_text),
+    AfterValidator(check_plan_date),
 ]

@@ -2,6 +2,17 @@ import asyncio
 
 
 def test_transaction_crud_uses_repository_override(client, overrides):
+    income = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1000,
+            "transaction_type": "income",
+            "category": "salary",
+            "description": "Salary",
+            "date": "2026-10-01",
+        },
+    )
+    assert income.status_code == 201
     payload = {
         "amount": 100,
         "transaction_type": "expense",
@@ -16,7 +27,7 @@ def test_transaction_crud_uses_repository_override(client, overrides):
 
     listed = client.get("/api/v1/transactions")
     assert listed.status_code == 200
-    assert listed.json()["total"] == 1
+    assert listed.json()["total"] == 2
 
     fetched = client.get(f"/api/v1/transactions/{transaction_id}")
     assert fetched.status_code == 200
@@ -66,7 +77,7 @@ def test_health_routes_use_database_override(client, overrides):
 def test_rag_ask_happy_path_with_service_stub(client, monkeypatch):
     monkeypatch.setattr(
         "app.api.v1.endpoints.rag.answer_with_rag",
-        lambda question, k: asyncio.sleep(
+        lambda question, k, user_id, **kwargs: asyncio.sleep(
             0,
             result={
                 "question": question,
@@ -87,15 +98,19 @@ def test_rag_ask_happy_path_with_service_stub(client, monkeypatch):
 def test_import_happy_path_with_service_stubs(client, monkeypatch, overrides):
     monkeypatch.setattr(
         "app.api.v1.endpoints.imports.extract_transactions",
-        lambda filename, content: [{"amount": 10}],
-    )
-    monkeypatch.setattr(
-        "app.api.v1.endpoints.imports.validate_rows",
-        lambda rows: [],
+        lambda filename, content: [
+            {
+                "amount": 10,
+                "transaction_type": "income",
+                "category": "salary",
+                "description": "Salary",
+                "date": "2026-11-01",
+            }
+        ],
     )
     monkeypatch.setattr(
         "app.api.v1.endpoints.imports.insert_transactions",
-        lambda transactions, repository: asyncio.sleep(0, result=["1"]),
+        lambda transactions, repository, **kwargs: asyncio.sleep(0, result=["1"]),
     )
 
     response = client.post(

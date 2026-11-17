@@ -86,7 +86,7 @@
         <!-- Developer Note: data-user-initial can be populated via JS -->
         <span class="avatar" data-user-initial>D</span>
         <div>
-          <div class="account-name" data-user-name>Durga Prasad</div>
+          <div class="account-name" data-user-name>Personal account</div>
           <div class="account-sub">Personal account</div>
         </div>
       </div>
@@ -122,12 +122,12 @@
 
         <button class="icon-btn" id="notifyBtn" aria-label="Notifications">
           <i data-lucide="bell"></i>
-          <span class="notification-dot"></span>
+          <span class="notification-count" id="notificationCount" hidden>0</span>
         </button>
 
         <button class="profile-btn" id="profileBtn">
-          <span class="avatar" data-user-initial>D</span>
-          <span data-user-name>Durga Prasad</span>
+          <span class="avatar" data-user-initial>P</span>
+          <span data-user-name>Personal account</span>
           <i data-lucide="chevron-down"></i>
         </button>
       </div>
@@ -140,7 +140,7 @@
       <div class="welcome-row">
         <div>
           <div class="eyebrow">Your financial snapshot</div>
-          <h1 id="greetingTitle">Good afternoon, Durga Prasad 👋</h1>
+          <h1 id="greetingTitle">Your financial snapshot</h1>
           <p>A clearer view of your money starts here. Here's your monthly overview.</p>
         </div>
         <div class="period-select">
@@ -153,12 +153,12 @@
       <section class="hero">
         <div class="hero-main">
           <div class="hero-label">
-            <i data-lucide="wallet"></i> Available after spending
+            <i data-lucide="wallet"></i> Available after cash flow
           </div>
           <div class="hero-total" id="available">
             <span id="availableValue">—</span> <small>this month</small>
           </div>
-          <div class="hero-caption">Your remaining income for the selected month</div>
+          <div class="hero-caption">Cash inflows less expenses, investments, and loan repayments for the selected month</div>
           
           <!-- Visual Progress Bar -->
           <div class="hero-progress">
@@ -199,6 +199,26 @@
           </div>
         </article>
 
+        <article class="kpi allocated-kpi">
+          <div class="kpi-head">
+            Allocated budget <span class="kpi-icon lav"><i data-lucide="wallet-cards"></i></span>
+          </div>
+          <div class="kpi-value" id="allocatedValue">—</div>
+          <div class="kpi-foot">
+            <strong>Planned</strong> <span>active budgets</span>
+          </div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-head">
+            Available allocation <span class="kpi-icon"><i data-lucide="wallet"></i></span>
+          </div>
+          <div class="kpi-value" id="availableAllocatedValue">—</div>
+          <div class="kpi-foot">
+            <strong>Remaining</strong> <span>active budgets</span>
+          </div>
+        </article>
+
         <article class="kpi">
           <div class="kpi-head">
             Total expenses <span class="kpi-icon coral"><i data-lucide="trending-down"></i></span>
@@ -221,7 +241,7 @@
 
         <article class="kpi">
           <div class="kpi-head">
-            Loan payments <span class="kpi-icon lav"><i data-lucide="landmark"></i></span>
+            Net loan cash flow <span class="kpi-icon lav"><i data-lucide="landmark"></i></span>
           </div>
           <div class="kpi-value" id="loanValue">—</div>
           <div class="kpi-foot">
@@ -315,26 +335,6 @@
 
       </section>
 
-      <!-- AI Insights Panel -->
-      <section class="ai-panel" id="insights">
-        <div class="ai-title">
-          <span class="ai-mark"><i data-lucide="sparkles"></i></span>
-          <div>
-            <h2>FinSight AI insights</h2>
-            <p>Ideas to help you make informed choices</p>
-          </div>
-        </div>
-
-        <div class="ai-insight" id="insightStatus">
-          <i data-lucide="info"></i>
-          <span>AI insights will appear when supported backend data is available.</span>
-        </div>
-
-        <button class="primary" id="askAI">
-          <i data-lucide="message-circle"></i> Ask FinSight AI
-        </button>
-      </section>
-
       <!-- Footer -->
       <footer class="footer">
         <span>© <span id="year"></span> FinSight AI · Make every rupee count.</span>
@@ -344,11 +344,21 @@
     </div>
   </main>
 
+  <div class="notification-modal" id="notificationModal" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" hidden>
+    <div class="notification-card">
+      <div class="notification-head">
+        <div><div class="eyebrow">Budget alerts</div><h2 id="notificationTitle">Notifications</h2></div>
+        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button><button class="secondary" id="deleteAllNotifications" type="button">Delete all</button><button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button></div>
+      </div>
+      <div class="notification-list" id="notificationList"></div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <output class="toast" id="toast" aria-live="polite"></output>
 
   <!-- Custom JavaScript -->
-  <script src="../js/dashboard.js?v=2" defer></script>
+  <script src="../js/dashboard.js?v=3" defer></script>
 
 </body>
 </html>

@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
+from math import ceil
 
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -13,6 +16,7 @@ from app.core.exceptions import (
 )
 from app.db.client import close_database, get_database
 from app.db.indexes import ensure_indexes
+from app.integrations.gemini_key_pool import AllKeysExhausted
 from app.schemas.common import HomeResponse
 
 
@@ -32,14 +36,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+@app.exception_handler(AllKeysExhausted)
+async def gemini_keys_exhausted_handler(request, exc: AllKeysExhausted):
+    retry_after = max(1, ceil(exc.retry_in))
+    return JSONResponse(
+        status_code=503,
+        headers={"Retry-After": str(retry_after)},
+        content={
+            "detail": "Gemini is temporarily unavailable. Please retry later.",
+            "retry_after": retry_after,
+        },
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,8 +63,33 @@ async def not_found_handler(request, exc: NotFoundError):
     return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    errors: dict[str, str] = {}
+    for err in exc.errors():
+        loc = err.get("loc", [])
+        field = str(loc[-1]) if loc else "non_field_errors"
+        msg = err.get("msg", "Invalid value")
+        if msg.startswith("Value error, "):
+            msg = msg[len("Value error, ") :]
+        errors[field] = msg
+    return JSONResponse(
+        status_code=422,
+        content={"detail": jsonable_encoder(exc.errors()), "errors": errors},
+    )
+
+
 @app.exception_handler(InvalidInputError)
 async def invalid_input_handler(request, exc: InvalidInputError):
+    if exc.status_code == 422:
+        field = exc.field or "non_field_errors"
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": exc.detail,
+                "errors": {field: exc.detail},
+            },
+        )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 

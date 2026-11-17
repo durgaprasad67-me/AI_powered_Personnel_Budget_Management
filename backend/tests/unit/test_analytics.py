@@ -15,6 +15,8 @@ def test_monthly_summary_keeps_loans_and_investments_out_of_spending():
             row("investment_return", "investment", 2500.0),
             row("loan_taken", "loan", 100000.0),
             row("loan_repaid", "loan", 12000.0),
+            row("loan_collected", "loan return", 200.0),
+            row("loan_given", "loan", 500.0),
         ],
     )
 
@@ -29,4 +31,6 @@ def test_monthly_summary_keeps_loans_and_investments_out_of_spending():
     }
     assert summary["loans"]["borrowed"] == 100000.0
     assert summary["loans"]["repaid"] == 12000.0
-    assert summary["net_cash_flow"] == 126499.5
+    assert summary["loans"]["collected"] == 200.0
+    assert summary["loans"]["lent"] == 500.0
+    assert summary["net_cash_flow"] == 126199.5

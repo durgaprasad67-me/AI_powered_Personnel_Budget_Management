@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.domain.categorization import fill_missing_fields
 from app.schemas.transactions import TransactionCreate
 from app.services.importing.normalizers import normalize_transaction_row
 
@@ -30,9 +31,12 @@ def validate_transaction(row: dict[str, Any]) -> TransactionCreate:
 
     # Step 1: Standardize column names and values.
     normalized_row = normalize_transaction_row(row)
+    filled_row = fill_missing_fields(normalized_row)
+    # Remove source-only fields not present in TransactionCreate
+    filled_row.pop("auto_filled", None)
 
     # Step 2: Validate the normalized data.
-    return TransactionCreate.model_validate(normalized_row)
+    return TransactionCreate.model_validate(filled_row)
 
 
 def validate_transactions(

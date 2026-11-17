@@ -3,7 +3,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.types import Amount, Category, Description, TransactionType, UpdateDate
+from app.schemas.types import (
+    Amount,
+    Category,
+    Description,
+    PlanDate,
+    TransactionType,
+    UpdateDate,
+)
 
 
 # CATEGORY SPENDING
@@ -62,8 +69,8 @@ class SpendingInsightRequest(BaseModel):
         min_length=3,
         max_length=1000,
     )
-    start_date: UpdateDate | None = None
-    end_date: UpdateDate | None = None
+    start_date: PlanDate | None = None
+    end_date: PlanDate | None = None
     include_recommendations: bool = True
 
     @model_validator(mode="after")

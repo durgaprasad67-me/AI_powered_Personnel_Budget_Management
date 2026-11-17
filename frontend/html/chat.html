@@ -38,6 +38,21 @@
         <button type="button" data-question="Am I on track with my budgets?">Am I on track with my budgets?</button>
       </div>
 
+      <form class="document-upload" id="documentUploadForm">
+        <label for="documentFile">Add a knowledge document</label>
+        <div class="upload-row">
+          <input
+            id="documentFile"
+            name="file"
+            type="file"
+            accept=".pdf,.docx,.txt,.csv,.xlsx"
+            aria-describedby="uploadStatus"
+          >
+          <button class="upload-button" type="submit" id="uploadButton">Add document</button>
+        </div>
+        <p id="uploadStatus" role="status" aria-live="polite">PDF, DOCX, TXT, CSV, and XLSX are supported.</p>
+      </form>
+
       <div class="conversation" id="conversation" aria-live="polite">
         <div class="message assistant">
           <span class="message-avatar">✦</span>
@@ -52,8 +67,7 @@
           <button class="send-button" type="submit" id="sendButton">Ask AI <span>→</span></button>
         </div>
         <div class="form-options">
-          <label><input type="checkbox" id="recommendations" checked> Include recommendations</label>
-          <span id="formStatus"></span>
+          <span id="formStatus" role="status" aria-live="polite">Ready to help</span>
         </div>
       </form>
     </section>

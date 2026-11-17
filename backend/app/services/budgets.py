@@ -10,8 +10,33 @@ class BudgetService:
     def __init__(self, repository: BudgetRepository):
         self.repository = repository
 
+    async def _validate_allocation_plan(
+        self,
+        budget: dict[str, Any],
+        *,
+        exclude_budget_id: str | None = None,
+    ) -> None:
+        conflict = await self.repository.allocation_conflict(
+            budget,
+            exclude_budget_id=exclude_budget_id,
+        )
+        if conflict is None:
+            return
+        details = ", ".join(
+            f'{item["name"]} ({item["amount"]:,.2f})'
+            for item in conflict["budgets"]
+        )
+        raise InvalidInputError(
+            "Budget plan conflict: the All transaction types budget "
+            f"({conflict['limit']:,.2f}) is lower than the active "
+            f"allocations ({conflict['allocated']:,.2f}). "
+            f"Review these budgets: {details}."
+        )
+
     async def create(self, budget: BudgetCreate) -> dict[str, Any]:
-        saved = await self.repository.create(budget.model_dump(mode="json"))
+        document = budget.model_dump(mode="json")
+        await self._validate_allocation_plan(document)
+        saved = await self.repository.create(document)
         if saved is None:
             raise RuntimeError("Unable to retrieve the created budget.")
         return saved
@@ -45,9 +70,8 @@ class BudgetService:
         )
         if end_date is not None and end_date < start_date:
             raise InvalidInputError("end_date must be on or after start_date.")
-        if merged.get("period") == "custom" and end_date is None:
-            raise InvalidInputError("Custom budgets require an end_date.")
 
+        await self._validate_allocation_plan(merged, exclude_budget_id=budget_id)
         updated = await self.repository.update(budget_id, changes)
         if updated is None:
             raise NotFoundError("Budget not found.")
@@ -64,14 +88,14 @@ class BudgetService:
         end_date = budget.get("end_date")
         if end_date is None:
             end_date = period_end(
-                Date.fromisoformat(start_date),
-                budget["period"],
+                Date.fromisoformat(start_date)
             ).isoformat()
 
         spent_amount = await self.repository.spent_amount(
             start_date=start_date,
             end_date=end_date,
             category=budget.get("category"),
+            transaction_type=budget.get("transaction_type", "expense"),
         )
         budget_amount = float(budget["amount"])
         return BudgetProgress(

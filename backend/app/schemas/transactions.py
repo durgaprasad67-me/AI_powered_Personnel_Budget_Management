@@ -2,13 +2,13 @@ from datetime import date as Date
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.categorization import fill_missing_fields
 from app.domain.dates import today_ist
 from app.schemas.types import (
     Amount,
     Category,
     CreateDate,
     Description,
+    PlanDate,
     TransactionType,
     UpdateDate,
 )
@@ -18,17 +18,27 @@ from app.schemas.types import (
 class TransactionCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     amount: Amount
-    transaction_type: TransactionType | None = None
-    category: Category | None = None
-    description: Description | None = None
+    transaction_type: TransactionType
+    category: Category
+    description: Description = ""
     date: CreateDate = Field(default_factory=today_ist)
     auto_filled: list[str] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
-    def fill_in_missing_fields(cls, data):
+    def track_defaulted_date(cls, data):
         if isinstance(data, dict):
-            return fill_missing_fields(data)
+            d = dict(data)
+            auto = list(d.get("auto_filled") or [])
+            if (
+                "date" not in d
+                or d["date"] is None
+                or (isinstance(d["date"], str) and not d["date"].strip())
+            ):
+                if "date" not in auto:
+                    auto.append("date")
+            d["auto_filled"] = auto
+            return d
         return data
 
 
@@ -49,9 +59,21 @@ class TransactionResponse(BaseModel):
     amount: Amount
     transaction_type: TransactionType
     category: Category
-    description: Description
+    description: Description = ""
     date: Date
     auto_filled: list[str] = Field(default_factory=list)
+    warning: str | None = None
+
+
+# DYNAMIC BUDGET LIMIT / CEILING RESPONSE
+class BudgetLimitResponse(BaseModel):
+    has_budget: bool
+    month: str
+    allocated_budget: float | None = None
+    spent_amount: float = 0.0
+    remaining_budget: float | None = None
+    max_allowed: float
+    warning: str | None = None
 
 
 # PAGINATED TRANSACTION RESPONSE
@@ -67,8 +89,8 @@ class TransactionFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     transaction_type: TransactionType | None = None
     category: Category | None = None
-    start_date: UpdateDate | None = None
-    end_date: UpdateDate | None = None
+    start_date: PlanDate | None = None
+    end_date: PlanDate | None = None
     min_amount: float | None = Field(
         default=None,
         ge=0,

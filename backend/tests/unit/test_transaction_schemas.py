@@ -63,11 +63,68 @@ def test_messy_amounts_are_cleaned():
 
 @pytest.mark.parametrize(
     "bad_amount",
-    [0, -5, 0.001, True, float("inf"), float("nan"), 10**12, "abc"],
+    [0, -5, -0.01, True, float("inf"), float("nan"), "abc", "1e5", "2.5e3"],
 )
 def test_bad_amounts_are_rejected(bad_amount):
     with pytest.raises(ValidationError):
         make(amount=bad_amount)
+
+
+def test_missing_required_fields_are_rejected():
+    # Missing amount
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "transaction_type": "expense",
+            "category": "food",
+        })
+    # Missing transaction_type
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "amount": 100,
+            "category": "food",
+        })
+    # Missing category
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "amount": 100,
+            "transaction_type": "expense",
+        })
+
+
+def test_category_length_and_formatting():
+    # Category < 2 chars is rejected
+    with pytest.raises(ValidationError):
+        make(category="a")
+    # Category > 30 chars is rejected
+    with pytest.raises(ValidationError):
+        make(category="a" * 31)
+    # Category 2 chars is accepted
+    assert make(category="ab").category == "ab"
+    # Category 30 chars is accepted
+    assert len(make(category="a" * 30).category) == 30
+    # Category collapses internal spaces and lowercases
+    assert make(category="  Food   Dining  ").category == "food dining"
+
+
+def test_description_optional_sanitized_and_html_stripped():
+    # Description is optional and defaults to empty string
+    tx_no_desc = make()
+    assert tx_no_desc.description == "Lunch"
+
+    tx_empty = TransactionCreate.model_validate({
+        "amount": 50,
+        "transaction_type": "expense",
+        "category": "food",
+    })
+    assert tx_empty.description == ""
+
+    # HTML tags and control chars are stripped
+    tx_html = make(description="<script>alert(1)</script>Lunch at <b>Cafe</b>")
+    assert tx_html.description == "alert(1)Lunch at Cafe"
+
+    # Description > 200 chars is rejected
+    with pytest.raises(ValidationError):
+        make(description="x" * 201)
 
 
 def test_missing_date_defaults_to_today():
@@ -98,95 +155,19 @@ def test_unreasonable_dates_are_rejected(bad_date):
         make(date=bad_date)
 
 
-def test_amount_only_input_is_filled_in():
-    transaction = TransactionCreate.model_validate({"amount": 250})
-
-    assert transaction.transaction_type == "expense"
-    assert transaction.category == "other"
-    assert transaction.description == "other"
-    assert transaction.date == today_ist()
-    assert transaction.auto_filled == [
-        "category",
-        "transaction_type",
-        "description",
-        "date",
-    ]
+def test_future_date_is_rejected():
+    tomorrow = today_ist() + timedelta(days=1)
+    with pytest.raises(ValidationError):
+        make(date=str(tomorrow))
 
 
-def test_category_is_guessed_from_description():
-    transaction = TransactionCreate.model_validate(
-        {"amount": 250, "description": "Swiggy dinner", "date": "2026-10-23"}
-    )
-
-    assert transaction.category == "food"
-    assert transaction.transaction_type == "expense"
-    assert transaction.description == "Swiggy dinner"
-    assert transaction.auto_filled == ["category", "transaction_type"]
-
-
-def test_income_is_guessed_from_description():
-    transaction = TransactionCreate.model_validate(
-        {"amount": "₹50,000", "description": "October salary", "date": "2026-10-23"}
-    )
-
-    assert transaction.amount == 50000.0
-    assert transaction.category == "salary"
-    assert transaction.transaction_type == "income"
-
-
-def test_update_schema_cleans_values_but_guesses_nothing():
+def test_update_schema_cleans_values():
     updates = TransactionUpdate.model_validate({"category": "  FOOD ", "amount": "₹99"})
 
     assert updates.model_dump(exclude_unset=True) == {
         "category": "food",
         "amount": 99.0,
     }
-
-
-def guess(**fields):
-    return TransactionCreate.model_validate(
-        {"amount": 1000, "date": "2026-10-23", **fields}
-    )
-
-
-def test_sip_is_an_investment_not_an_expense():
-    transaction = guess(description="Monthly SIP")
-
-    assert (transaction.category, transaction.transaction_type) == (
-        "investment",
-        "investment",
-    )
-
-
-def test_redeemed_investment_is_money_coming_back():
-    transaction = guess(description="Mutual fund redeemed")
-
-    assert transaction.category == "investment"
-    assert transaction.transaction_type == "investment_return"
-
-
-def test_emi_is_a_loan_repayment():
-    transaction = guess(description="Home loan EMI")
-
-    assert (transaction.category, transaction.transaction_type) == (
-        "loan",
-        "loan_repaid",
-    )
-
-
-def test_borrowing_and_lending_are_understood():
-    assert guess(description="Personal loan disbursed").transaction_type == "loan_taken"
-    assert guess(description="Lent to Ravi").transaction_type == "loan_given"
-
-
-def test_type_without_category_gets_a_sensible_category():
-    transaction = guess(transaction_type="Borrowed")
-
-    assert (transaction.category, transaction.transaction_type) == (
-        "loan",
-        "loan_taken",
-    )
-    assert transaction.auto_filled == ["category", "description"]
 
 
 def test_loan_and_investment_type_words_are_understood():

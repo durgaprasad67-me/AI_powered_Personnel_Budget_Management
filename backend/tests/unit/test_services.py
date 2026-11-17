@@ -23,6 +23,14 @@ def run(awaitable):
     return asyncio.run(awaitable)
 
 
+async def no_vector_sync(*args, **kwargs):
+    return True
+
+
+async def no_vector_delete(*args, **kwargs):
+    return True
+
+
 def transaction_data(**changes):
     return {
         "amount": 100,
@@ -36,10 +44,25 @@ def transaction_data(**changes):
 
 def test_transaction_service_create_list_filters_get_update_replace_delete():
     repository = FakeTransactionRepository()
-    service = TransactionService(repository)
+    service = TransactionService(
+        repository,
+        vector_sync=no_vector_sync,
+        vector_delete=no_vector_delete,
+    )
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(
+                    amount=1000,
+                    transaction_type="income",
+                    category="salary",
+                )
+            )
+        )
+    )
     created = run(service.create(TransactionCreate.model_validate(transaction_data())))
 
-    assert created["id"] == 1
+    assert created["id"] == 2
     listed = run(
         service.list(
             transaction_type="expense",
@@ -51,11 +74,11 @@ def test_transaction_service_create_list_filters_get_update_replace_delete():
         )
     )
     assert listed["total"] == 1
-    assert run(service.get(1))["id"] == 1
+    assert run(service.get(2))["id"] == 2
 
     updated = run(
         service.update(
-            1,
+            2,
             TransactionUpdate.model_validate({"amount": 125}),
         )
     )
@@ -63,19 +86,22 @@ def test_transaction_service_create_list_filters_get_update_replace_delete():
 
     replaced = run(
         service.replace(
-            1,
+            2,
             TransactionCreate.model_validate(transaction_data(amount=200)),
         )
     )
     assert replaced["amount"] == 200
-    run(service.delete(1))
+    run(service.delete(2))
     with pytest.raises(NotFoundError):
-        run(service.get(1))
+        run(service.get(2))
 
 
 def test_transaction_service_errors():
-    service = TransactionService(FakeTransactionRepository())
-
+    service = TransactionService(
+        FakeTransactionRepository(),
+        vector_sync=no_vector_sync,
+        vector_delete=no_vector_delete,
+    )
     with pytest.raises(NotFoundError):
         run(service.get(1))
     with pytest.raises(InvalidInputError) as no_changes:
@@ -88,6 +114,119 @@ def test_transaction_service_errors():
                 TransactionUpdate.model_validate({"amount": None}),
             )
         )
+
+
+def test_loan_inflows_fund_cash_outflows_without_salary_income():
+    repository = FakeTransactionRepository()
+    service = TransactionService(repository, vector_sync=no_vector_sync)
+
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(
+                    amount=100,
+                    transaction_type="loan_taken",
+                    category="loan",
+                    description="Personal loan taken",
+                )
+            )
+        )
+    )
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(
+                    amount=40,
+                    transaction_type="loan_repaid",
+                    category="loan",
+                    description="Loan repaid",
+                )
+            )
+        )
+    )
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(amount=60, transaction_type="expense")
+            )
+        )
+    )
+
+    with pytest.raises(InvalidInputError, match="available balance"):
+        run(
+            service.create(
+                TransactionCreate.model_validate(
+                    transaction_data(amount=0.01, transaction_type="expense")
+                )
+            )
+        )
+
+
+def test_import_cash_preflight_checks_the_whole_batch_before_writes():
+    repository = FakeTransactionRepository()
+    service = TransactionService(repository, vector_sync=no_vector_sync)
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(
+                    amount=100,
+                    transaction_type="income",
+                    category="salary",
+                )
+            )
+        )
+    )
+    imported = [
+        TransactionCreate.model_validate(transaction_data(amount=80)),
+        TransactionCreate.model_validate(transaction_data(amount=30)),
+    ]
+
+    with pytest.raises(InvalidInputError, match="No transactions were imported"):
+        run(service.validate_import_batch(imported))
+
+    assert len(repository.documents) == 1
+
+
+def test_transaction_vector_failures_do_not_fail_mongo_crud():
+    repository = FakeTransactionRepository()
+
+    async def embedding_fails(*args, **kwargs):
+        raise RuntimeError("offline embedding provider")
+
+    service = TransactionService(
+        repository,
+        vector_sync=embedding_fails,
+        vector_delete=embedding_fails,
+    )
+    run(
+        service.create(
+            TransactionCreate.model_validate(
+                transaction_data(
+                    amount=1000,
+                    transaction_type="income",
+                    category="salary",
+                )
+            )
+        )
+    )
+    created = run(
+        service.create(TransactionCreate.model_validate(transaction_data()))
+    )
+    assert created["id"] == 2
+    assert repository.documents[1]["vector_index_status"] == "pending"
+    assert repository.documents[2]["vector_index_status"] == "pending"
+
+    updated = run(
+        service.update(
+            2,
+            TransactionUpdate.model_validate({"amount": 125}),
+        )
+    )
+    assert updated["amount"] == 125
+    assert repository.documents[1]["vector_index_status"] == "pending"
+
+    run(service.delete(2))
+    assert 2 not in repository.documents
 
 
 def budget_data(**changes):
@@ -122,13 +261,77 @@ def test_budget_service_validation_and_progress():
                 BudgetUpdate.model_validate({"end_date": "2026-09-01"}),
             )
         )
-    with pytest.raises(InvalidInputError):
-        run(
-            service.update(
-                budget["id"],
-                BudgetUpdate.model_validate({"period": "custom"}),
+
+    # Budgets can be planned for future dates
+    future_budget = run(
+        service.create(
+            BudgetCreate.model_validate(
+                budget_data(
+                    name="Future Food",
+                    start_date="2030-01-01",
+                    end_date="2030-01-31",
+                )
             )
         )
+    )
+    assert future_budget["start_date"] == "2030-01-01"
+    assert future_budget["end_date"] == "2030-01-31"
+
+
+def test_budget_service_rejects_global_limit_below_specific_allocations():
+    repository = FakeBudgetRepository()
+    service = BudgetService(repository)
+    run(
+        service.create(
+            BudgetCreate.model_validate(
+                budget_data(name="Food", amount=600, category="food")
+            )
+        )
+    )
+    run(
+        service.create(
+            BudgetCreate.model_validate(
+                budget_data(name="Transport", amount=500, category="transport")
+            )
+        )
+    )
+
+    with pytest.raises(InvalidInputError, match="Budget plan conflict"):
+        run(
+            service.create(
+                BudgetCreate.model_validate(
+                    budget_data(
+                        name="Monthly total",
+                        amount=1_000,
+                        category=None,
+                        transaction_type="all",
+                    )
+                )
+            )
+        )
+
+    repository = FakeBudgetRepository()
+    service = BudgetService(repository)
+    run(
+            service.create(
+                BudgetCreate.model_validate(
+                    budget_data(
+                        name="Monthly total",
+                        amount=1_000,
+                        category=None,
+                        transaction_type="all",
+                    )
+                )
+            )
+    )
+    with pytest.raises(InvalidInputError, match="Budget plan conflict"):
+            run(
+                service.create(
+                    BudgetCreate.model_validate(
+                        budget_data(name="Food", amount=1_001, category="food")
+                    )
+                )
+            )
 
 
 def test_goal_service_sets_status_updates_and_reports_progress():

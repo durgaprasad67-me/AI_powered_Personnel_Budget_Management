@@ -1,7 +1,9 @@
+import logging
 from pathlib import Path
 from typing import Any
 
 from app.core.exceptions import InvalidInputError
+from app.core.user_context import DEFAULT_CURRENT_USER_ID
 from app.repositories.transactions import TransactionRepository
 from app.services.importing.constants import (
     ALLOWED_EXTENSIONS,
@@ -13,6 +15,9 @@ from app.services.importing.parsers.excel_parser import extract_excel
 from app.services.importing.parsers.pdf_parser import extract_pdf
 from app.services.importing.parsers.text_parser import extract_text
 from app.services.importing.validators import validate_transactions
+from app.services.rag.transaction_indexing import sync_transactions_best_effort
+
+logger = logging.getLogger(__name__)
 
 
 def extract_rows(filename: str, content: bytes) -> list[dict[str, Any]]:
@@ -34,7 +39,7 @@ def validate_extension(filename: str) -> str:
     extension = Path(filename).suffix.lower()
     if extension not in ALLOWED_EXTENSIONS:
         raise InvalidInputError(
-            "Unsupported file format. Allowed formats: PDF, DOCX, TXT, XLSX, XLS.",
+            "This file type is not supported. Please choose a CSV, Excel, PDF, DOCX, or TXT file.",
             status_code=415,
         )
     return extension
@@ -85,12 +90,31 @@ def validate_rows(rows: list[dict[str, Any]]) -> list[Any]:
 async def insert_transactions(
     transactions: list[Any],
     repository: TransactionRepository,
+    *,
+    user_id: str = DEFAULT_CURRENT_USER_ID,
+    vector_sync=sync_transactions_best_effort,
 ) -> list[str]:
     imported_ids: list[str] = []
+    saved_transactions: list[dict[str, Any]] = []
     for transaction in transactions:
         document = transaction.model_dump(mode="json")
-        inserted = await repository.create(document)
+        inserted = await repository.create(document, user_id=user_id)
         if inserted is None or inserted.get("id") is None:
             raise RuntimeError("Database helper did not return an inserted ID.")
         imported_ids.append(str(inserted["id"]))
+        saved_transactions.append(inserted)
+
+    # Mongo is the source of truth. A vector outage leaves these rows pending
+    # and must not fail an otherwise successful bulk import.
+    try:
+        await vector_sync(
+            saved_transactions,
+            user_id=user_id,
+            repository=repository,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Imported transactions were saved but vector indexing failed",
+            extra={"error_type": type(exc).__name__},
+        )
     return imported_ids

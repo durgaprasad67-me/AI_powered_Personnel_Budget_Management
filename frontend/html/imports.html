@@ -1,3 +1,106 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FinSight AI | Import data</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="../css/app.css"><link rel="stylesheet" href="../css/imports-page.css"></head>
-<body data-page="Import data"><div class="app-shell"><aside class="sidebar" id="sidebar"></aside><main class="main"><header class="topbar"><div class="topbar-left"><button class="menu-btn" id="menuBtn">☰</button><div class="breadcrumb">Workspace / <strong>Import data</strong></div></div><span class="avatar">D</span></header><div class="content"><div class="page-heading"><div><div class="eyebrow">Bring in your history</div><h1>Import data</h1><p class="subtitle">Upload CSV, Excel, PDF, DOCX, or TXT transaction files.</p></div></div><section class="grid grid-2"><article class="card upload-card"><div class="upload-mark">↑</div><h2>Import transactions</h2><p class="subtitle">Choose a supported file to validate and save transactions.</p><form id="importForm"><input id="importFile" type="file" accept=".csv,.xlsx,.xls,.pdf,.docx,.txt" required><button class="primary" type="submit">Upload and import</button></form></article><article class="card upload-card"><div class="upload-mark">✦</div><h2>Index knowledge document</h2><p class="subtitle">Add a document to the AI knowledge base for RAG answers.</p><form id="documentForm"><input id="documentFile" type="file" accept=".pdf,.docx,.txt" required><button class="secondary" type="submit">Index document</button></form></article></section><div class="card result-card" id="importResult">No import started.</div></div></main></div><div class="toast" id="toast"></div><script src="https://unpkg.com/lucide@latest"></script><script src="../js/app.js"></script><script src="../js/imports-page.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinSight AI | Import data</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/imports-page.css">
+</head>
+<body data-page="Import data">
+
+  <div class="app-shell">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar"></aside>
+    
+    <!-- Main Content -->
+    <main class="main">
+      
+      <!-- Top Navigation -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menuBtn">☰</button>
+          <div class="breadcrumb">
+            Workspace / <strong>Import data</strong>
+          </div>
+        </div>
+        <span class="avatar">D</span>
+      </header>
+      
+      <!-- Page Content -->
+      <div class="content">
+        
+        <!-- Page Header -->
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">Bring in your history</div>
+            <h1>Import data</h1>
+            <p class="subtitle">Upload CSV, Excel, PDF, DOCX, or TXT transaction files.</p>
+          </div>
+        </div>
+        
+        <!-- Upload Forms Grid -->
+        <section class="grid grid-2">
+          
+          <!-- Transaction Import Card -->
+          <article class="card upload-card">
+            <div class="upload-mark">↑</div>
+            <h2>Import transactions</h2>
+            <p class="subtitle">Choose a supported file to validate and save transactions.</p>
+            <form id="importForm">
+              <label class="drop-zone" id="dropZone" for="importFile">
+                <span class="drop-zone-icon" aria-hidden="true">⇧</span>
+                <strong>Drop your transaction file here</strong>
+                <span>or click to browse from your computer</span>
+                <span class="drop-zone-file" id="selectedFile">No file selected</span>
+                <input id="importFile" type="file" accept=".csv,.xlsx,.xls,.pdf,.docx,.txt" required>
+              </label>
+              <div class="form-actions">
+                <button class="primary" type="submit">Upload and import</button>
+                <button class="clear-button" id="clearImportFile" type="button">Clear</button>
+              </div>
+            </form>
+          </article>
+        </section>
+        
+        <!-- Import Result Feedback -->
+        <div class="card result-card" id="importResult">
+          No import started.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast" id="toast"></div>
+  <div class="modal import-issues-modal" id="importIssuesModal" role="dialog" aria-modal="true" aria-labelledby="importIssuesTitle">
+    <div class="modal-card import-issues-card">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">Review before importing</div>
+          <h2 id="importIssuesTitle">Some records need attention</h2>
+        </div>
+        <button class="close" id="closeImportIssues" type="button" aria-label="Close">×</button>
+      </div>
+      <div id="importIssuesContent"></div>
+      <div class="import-issue-actions">
+        <button class="secondary" id="cancelPartialImport" type="button">No, cancel</button>
+        <button class="primary" id="confirmPartialImport" type="button">Yes, import valid rows</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/imports-page.js?v=4"></script>
+  
+</body>
+</html>

@@ -1,3 +1,46 @@
 .report-card { display: grid; gap: 12px; align-content: start; }
 .report-card h2, .report-card p { margin: 0; }
 .report-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: #e8f0ee; color: #4a7569; font-size: 23px; }
+.report-period, .report-download { display: flex; align-items: center; gap: 8px; }
+.report-period [hidden] { display: none !important; }
+.report-download select { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfc; color: var(--ink); }
+.report-preview { grid-column: 1 / -1; }
+.report-preview .card-header { margin-bottom: 10px; }
+.report-preview .card-header h2 { margin: 0 0 4px; }
+.report-preview table { min-width: 650px; }
+.report-preview strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #e8f4f0;
+  color: #278565;
+  font: 800 20px/1 Manrope, sans-serif;
+  white-space: nowrap;
+}
+.report-preview .empty {
+  width: 100%;
+  min-height: 150px;
+  padding: 32px 24px;
+  display: grid;
+  place-items: center;
+  color: #c24f4a;
+  background: #fff5f4;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+.report-preview tbody:has(td.empty) { display: block; padding: 18px 0 8px; }
+.report-preview tbody:has(td.empty) tr { display: block; }
+.report-preview tbody:has(td.empty) td.empty { margin: 0; }
+.confirm-modal { z-index: 50; }
+.confirm-card { width: min(420px, 100%); padding: 30px; text-align: center; }
+.confirm-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 16px; border-radius: 50%; background: #e8f0ee; color: #4a7569; font: 800 24px Manrope, sans-serif; }
+.confirm-card h2 { margin: 0; }
+.confirm-card p { margin: 10px 0 24px; color: var(--muted); line-height: 1.6; }
+.confirm-actions { display: flex; justify-content: center; gap: 10px; }
+.confirm-actions button { min-width: 116px; }
+.confirm-actions .primary { background: linear-gradient(135deg, #17243a, #2b4667); color: #fff; }
+@media (max-width: 420px) { .confirm-actions { flex-direction: column-reverse; } .confirm-actions button { width: 100%; } }
+@media (max-width: 620px) { .report-period, .report-download { width: 100%; flex-wrap: wrap; } .report-period > *, .report-download > * { flex: 1; } }

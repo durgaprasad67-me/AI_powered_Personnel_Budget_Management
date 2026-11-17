@@ -21,3 +21,16 @@ def test_normalization_handles_currency_and_transaction_aliases():
 def test_categorization_uses_description_hints_before_defaults():
     assert guess_category("Swiggy dinner") == "food"
     assert guess_type("loan", "Home loan EMI") == "loan_repaid"
+
+
+def test_loan_actions_keep_their_cash_direction():
+    assert guess_type("loan", "Personal loan taken") == "loan_taken"
+    assert guess_type("loan", "Loan collected from Ravi") == "loan_collected"
+    assert guess_type("loan", "Home loan repaid") == "loan_repaid"
+
+
+def test_household_descriptions_are_categorized_as_home():
+    assert guess_category("Water purifier filter") == "home"
+    assert guess_category("Kitchen utensils") == "home"
+    assert guess_category("Waterpurifierfilter") == "home"
+    assert guess_category("Kitchenutensils") == "home"
