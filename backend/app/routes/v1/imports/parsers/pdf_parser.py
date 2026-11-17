@@ -5,6 +5,7 @@ Extracts transaction tables from text-based PDF files.
 Scanned PDFs requiring OCR are not supported by this parser.
 """
 
+import re
 from typing import Any
 
 import fitz  # PyMuPDF
@@ -83,7 +84,10 @@ def _extract_table_rows(extracted_table: Any) -> list[dict[str, Any]]:
 
 def _build_row(headers: list[str | None], raw_row: Any) -> dict[str, Any] | None:
     """Build a row from table headers and cell values."""
-    values = [_clean_cell(value) for value in raw_row]
+    values = [
+        _clean_date_cell(value) if _is_date_header(header) else _clean_cell(value)
+        for header, value in zip(headers, raw_row)
+    ]
     if not any(values):
         return None
 
@@ -93,6 +97,29 @@ def _build_row(headers: list[str | None], raw_row: Any) -> dict[str, Any] | None
         if header
     }
     return row or None
+
+
+def _is_date_header(header: str | None) -> bool:
+    """Return whether a table column contains transaction dates."""
+    return bool(header and header.strip().lower() in {"date", "transaction date"})
+
+
+def _clean_date_cell(value: Any) -> str | None:
+    """
+    Normalize dates whose separators are split by PDF table extraction.
+
+    Some PDFs expose cells such as ``2026 -01 -07`` or
+    ``20260121 - -`` even though the rendered date is ``2026-01-21``.
+    """
+    cleaned = _clean_cell(value)
+    if cleaned is None:
+        return None
+
+    digits = re.sub(r"\D", "", cleaned)
+    if len(digits) == 8:
+        return f"{digits[:4]}-{digits[4:6]}-{digits[6:]}"
+
+    return cleaned
 
 
 def _clean_cell(value: Any) -> str | None:

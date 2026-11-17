@@ -118,14 +118,74 @@ def test_messy_amounts_are_cleaned():
 
 @pytest.mark.parametrize(
     "bad_amount",
-    [0, -5, 0.001, True, float("inf"), float("nan"), 10**12, "abc"],
+    [0, -5, -0.01, True, float("inf"), float("nan"), "abc", "1e5", "2.5e3"],
 )
 def test_bad_amounts_are_rejected(bad_amount):
     with pytest.raises(ValidationError):
         make(amount=bad_amount)
 
 
+<<<<<<< HEAD:backend/tests/test_transactions.py
 # ------------------------------------------------------------- dates -------
+=======
+def test_missing_required_fields_are_rejected():
+    # Missing amount
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "transaction_type": "expense",
+            "category": "food",
+        })
+    # Missing transaction_type
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "amount": 100,
+            "category": "food",
+        })
+    # Missing category
+    with pytest.raises(ValidationError):
+        TransactionCreate.model_validate({
+            "amount": 100,
+            "transaction_type": "expense",
+        })
+
+
+def test_category_length_and_formatting():
+    # Category < 2 chars is rejected
+    with pytest.raises(ValidationError):
+        make(category="a")
+    # Category > 30 chars is rejected
+    with pytest.raises(ValidationError):
+        make(category="a" * 31)
+    # Category 2 chars is accepted
+    assert make(category="ab").category == "ab"
+    # Category 30 chars is accepted
+    assert len(make(category="a" * 30).category) == 30
+    # Category collapses internal spaces and lowercases
+    assert make(category="  Food   Dining  ").category == "food dining"
+
+
+def test_description_optional_sanitized_and_html_stripped():
+    # Description is optional and defaults to empty string
+    tx_no_desc = make()
+    assert tx_no_desc.description == "Lunch"
+
+    tx_empty = TransactionCreate.model_validate({
+        "amount": 50,
+        "transaction_type": "expense",
+        "category": "food",
+    })
+    assert tx_empty.description == ""
+
+    # HTML tags and control chars are stripped
+    tx_html = make(description="<script>alert(1)</script>Lunch at <b>Cafe</b>")
+    assert tx_html.description == "alert(1)Lunch at Cafe"
+
+    # Description > 200 chars is rejected
+    with pytest.raises(ValidationError):
+        make(description="x" * 201)
+
+
+>>>>>>> 3d11468 (updated the some backend and frontend files):backend/tests/unit/test_transaction_schemas.py
 def test_missing_date_defaults_to_today():
     transaction = TransactionCreate.model_validate(BASE)
 
@@ -154,6 +214,7 @@ def test_unreasonable_dates_are_rejected(bad_date):
         make(date=bad_date)
 
 
+<<<<<<< HEAD:backend/tests/test_transactions.py
 # ------------------------------------------------- filling missing data ----
 def test_amount_only_input_is_filled_in():
     transaction = TransactionCreate.model_validate({"amount": 250})
@@ -193,11 +254,21 @@ def test_income_is_guessed_from_description():
 
 # ---------------------------------------------------------- PATCH schema ---
 def test_update_schema_cleans_values_but_guesses_nothing():
+=======
+def test_future_date_is_rejected():
+    tomorrow = today_ist() + timedelta(days=1)
+    with pytest.raises(ValidationError):
+        make(date=str(tomorrow))
+
+
+def test_update_schema_cleans_values():
+>>>>>>> 3d11468 (updated the some backend and frontend files):backend/tests/unit/test_transaction_schemas.py
     updates = TransactionUpdate.model_validate({"category": "  FOOD ", "amount": "₹99"})
 
     assert updates.model_dump(exclude_unset=True) == {"category": "food", "amount": 99.0}
 
 
+<<<<<<< HEAD:backend/tests/test_transactions.py
 # ------------------------------------------------ loans and investments ---
 def guess(**fields):
     return TransactionCreate.model_validate({"amount": 1000, "date": "2026-10-23", **fields})
@@ -234,6 +305,8 @@ def test_type_without_category_gets_a_sensible_category():
     assert transaction.auto_filled == ["category", "description"]
 
 
+=======
+>>>>>>> 3d11468 (updated the some backend and frontend files):backend/tests/unit/test_transaction_schemas.py
 def test_loan_and_investment_type_words_are_understood():
     assert make(transaction_type="Invested").transaction_type == "investment"
     assert make(transaction_type="EMI").transaction_type == "loan_repaid"

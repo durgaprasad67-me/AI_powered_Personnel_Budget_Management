@@ -1,1 +1,81 @@
+<<<<<<< HEAD
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Finance Chat</title></head><body><h1>Finance assistant placeholder</h1></body></html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinSight AI | Finance Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/chat.css?v=1">
+</head>
+<body>
+  <main class="chat-shell">
+    <header class="chat-header">
+      <a class="back-link" href="dashboard.html">← Dashboard</a>
+      <div class="brand">
+        <span class="brand-mark">✦</span>
+        <div>
+          <strong>FinSight AI</strong>
+          <span>Personal finance assistant</span>
+        </div>
+      </div>
+      <span class="status"><i></i> Ready to help</span>
+    </header>
+
+    <section class="chat-card">
+      <div class="intro">
+        <span class="intro-icon">✦</span>
+        <div>
+          <p class="eyebrow">Ask FinSight</p>
+          <h1>Make smarter decisions with your money.</h1>
+          <p class="intro-copy">Ask about your spending, budgets, or ways to improve your monthly cash flow.</p>
+        </div>
+      </div>
+
+      <div class="suggestions" aria-label="Suggested questions">
+        <button type="button" data-question="What are my main spending categories?">Where am I spending most?</button>
+        <button type="button" data-question="How can I reduce my monthly expenses?">How can I reduce expenses?</button>
+        <button type="button" data-question="Am I on track with my budgets?">Am I on track with my budgets?</button>
+      </div>
+
+      <form class="document-upload" id="documentUploadForm">
+        <label for="documentFile">Add a knowledge document</label>
+        <div class="upload-row">
+          <input
+            id="documentFile"
+            name="file"
+            type="file"
+            accept=".pdf,.docx,.txt,.csv,.xlsx"
+            aria-describedby="uploadStatus"
+          >
+          <button class="upload-button" type="submit" id="uploadButton">Add document</button>
+        </div>
+        <p id="uploadStatus" role="status" aria-live="polite">PDF, DOCX, TXT, CSV, and XLSX are supported.</p>
+      </form>
+
+      <div class="conversation" id="conversation" aria-live="polite">
+        <div class="message assistant">
+          <span class="message-avatar">✦</span>
+          <div class="bubble">Hi! Ask me anything about your financial activity and I’ll use your FinSight data to help.</div>
+        </div>
+      </div>
+
+      <form class="question-form" id="questionForm">
+        <label for="question">Your question</label>
+        <div class="input-row">
+          <textarea id="question" name="question" rows="2" minlength="3" maxlength="1000" placeholder="e.g. What should I focus on this month?" required></textarea>
+          <button class="send-button" type="submit" id="sendButton">Ask AI <span>→</span></button>
+        </div>
+        <div class="form-options">
+          <span id="formStatus" role="status" aria-live="polite">Ready to help</span>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script src="../js/chat.js?v=1" defer></script>
+</body>
+</html>
+>>>>>>> 3d11468 (updated the some backend and frontend files)

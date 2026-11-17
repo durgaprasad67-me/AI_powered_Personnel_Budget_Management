@@ -15,6 +15,16 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+<<<<<<< HEAD:backend/app/routes/v1/imports/normalizers.py
+=======
+from app.domain.categorization import guess_category, guess_type
+from app.domain.normalization import (
+    normalize_amount,
+    normalize_transaction_type,
+)
+from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
+
+>>>>>>> 3d11468 (updated the some backend and frontend files):backend/app/services/importing/normalizers.py
 # Maps common file column names to FinSight AI transaction fields.
 COLUMN_ALIASES: dict[str, set[str]] = {
     "date": {
@@ -95,6 +105,17 @@ def map_column_name(header: Any) -> str | None:
             return field_name
 
     return None
+
+
+def unsupported_columns(rows: list[dict[str, Any]]) -> list[str]:
+    """Return unique source columns that are not used by the importer."""
+    columns = {
+        str(header).strip()
+        for row in rows
+        for header in row
+        if header and map_column_name(header) is None
+    }
+    return sorted(columns, key=str.casefold)
 
 
 def clean_value(value: Any) -> Any:
@@ -244,13 +265,54 @@ def _normalize_debit_credit(normalized: dict[str, Any]) -> bool:
         raise ValueError("A transaction cannot have both debit and credit amounts.")
 
     if credit not in (None, Decimal("0")):
-        normalized["amount"] = abs(credit)
-        normalized["transaction_type"] = "income"
+        amount = abs(credit)
+        direction = "credit"
     elif debit not in (None, Decimal("0")):
-        normalized["amount"] = abs(debit)
-        normalized["transaction_type"] = "expense"
+        amount = abs(debit)
+        direction = "debit"
     else:
-        normalized["amount"] = abs(debit or credit or Decimal("0"))
+        amount = abs(debit or credit or Decimal("0"))
+        direction = None
+
+    normalized["amount"] = amount
+    explicit_type = normalized.get("transaction_type")
+    if explicit_type is not None:
+        normalized_type = normalize_transaction_type(explicit_type)
+        normalized["transaction_type"] = normalized_type
+        if direction == "credit" and normalized_type in CASH_OUT_TYPES:
+            raise ValueError(
+                f"A {normalized_type.replace('_', ' ')} transaction must be a debit."
+            )
+        if direction == "debit" and normalized_type in CASH_IN_TYPES:
+            raise ValueError(
+                f"A {normalized_type.replace('_', ' ')} transaction must be a credit."
+            )
+    elif direction is not None:
+        category = normalized.get("category")
+        description = normalized.get("description")
+        if _has_loan_context(category, description):
+            words = set(re.findall(r"[a-z]+", str(description or "").lower()))
+            if direction == "credit":
+                collection_words = {
+                    "collect", "collected", "collection", "recovered",
+                    "recover", "repayment", "repaid", "emi",
+                }
+                normalized["transaction_type"] = (
+                    "loan_collected"
+                    if str(category or "").strip().lower() == "loan return"
+                    or words & collection_words
+                    else "loan_taken"
+                )
+            else:
+                normalized["transaction_type"] = (
+                    "loan_given"
+                    if words & {"lend", "lent", "given"}
+                    else "loan_repaid"
+                )
+        else:
+            normalized["transaction_type"] = (
+                "income" if direction == "credit" else "expense"
+            )
 
     return True
 
@@ -265,8 +327,25 @@ def _normalize_amount_field(normalized: dict[str, Any]) -> None:
         return
 
     if "transaction_type" not in normalized:
-        normalized["transaction_type"] = "expense" if amount < 0 else "income"
+        category = normalized.get("category")
+        description = normalized.get("description")
+        if _has_loan_context(category, description):
+            guessed_category = category or guess_category(description) or "loan"
+            normalized["transaction_type"] = guess_type(
+                guessed_category,
+                description,
+            )
+        else:
+            normalized["transaction_type"] = "expense" if amount < 0 else "income"
     normalized["amount"] = abs(amount)
+
+
+def _has_loan_context(category: Any, description: Any) -> bool:
+    category_text = str(category or "").strip().lower()
+    words = set(re.findall(r"[a-z]+", str(description or "").lower()))
+    return category_text in {"loan", "loan return"} or bool(
+        words & {"loan", "emi", "borrow", "borrowed", "lender", "repayment"}
+    )
 
 
 def normalize_transaction_row(row: dict[str, Any]) -> dict[str, Any]:

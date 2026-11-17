@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinSight AI | Reports</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/reports-page.css">
+</head>
+<body data-page="Reports">
+
+  <div class="app-shell">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar"></aside>
+    
+    <!-- Main Content -->
+    <main class="main">
+      
+      <!-- Top Navigation -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menuBtn">☰</button>
+          <div class="breadcrumb">
+            Workspace / <strong>Reports</strong>
+          </div>
+        </div>
+        <span class="avatar">D</span>
+      </header>
+      
+      <!-- Page Content -->
+      <div class="content">
+        
+        <!-- Page Header -->
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">Take your data with you</div>
+            <h1>Reports</h1>
+            <p class="subtitle">Download transaction data for any month or year.</p>
+          </div>
+          <div class="report-period">
+            <select class="period-btn" id="reportPeriod" aria-label="Report period">
+              <option value="month">Monthly</option>
+              <option value="year">Yearly</option>
+            </select>
+            <input class="period-btn" id="reportMonth" type="month" aria-label="Select report month">
+            <input class="period-btn" id="reportYear" type="number" min="2000" max="2100" step="1" aria-label="Select report year" hidden>
+          </div>
+        </div>
+        
+        <!-- Reports Grid -->
+        <section class="grid grid-2">
+          
+          <!-- Download CSV Card -->
+          <article class="card report-card">
+            <div class="report-icon">▣</div>
+            <h2>Transaction report</h2>
+            <p class="subtitle">Export all transactions for the selected period.</p>
+            <div class="report-download">
+              <select id="reportFormat" aria-label="Download file format">
+                <option value="csv">CSV</option>
+                <option value="xlsx">Excel</option>
+                <option value="pdf">PDF</option>
+                <option value="docx">DOCX</option>
+                <option value="txt">TXT</option>
+              </select>
+              <button class="primary" id="downloadReport">Download</button>
+            </div>
+          </article>
+          
+          <!-- Print Report Card -->
+          <article class="card report-card">
+            <div class="report-icon">▤</div>
+            <h2>Print report</h2>
+            <p class="subtitle">Open a clean printable summary for the selected month.</p>
+            <button class="secondary" id="printReport">Print summary</button>
+          </article>
+
+        </section>
+
+        <section class="card report-preview">
+          <div class="card-header">
+            <div>
+              <h2>Selected transactions</h2>
+              <p class="subtitle" id="reportPreviewLabel">Loading report data...</p>
+            </div>
+            <strong id="reportPreviewCount"></strong>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th></tr></thead>
+              <tbody id="reportPreviewRows"><tr><td class="loading" colspan="5">Loading report data...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast" id="toast"></div>
+  <div class="modal confirm-modal" id="downloadConfirmModal" role="dialog" aria-modal="true" aria-labelledby="downloadConfirmTitle" aria-describedby="downloadConfirmMessage">
+    <div class="modal-card confirm-card">
+      <div class="confirm-icon" aria-hidden="true">?</div>
+      <h2 id="downloadConfirmTitle">Download report?</h2>
+      <p id="downloadConfirmMessage"></p>
+      <div class="confirm-actions">
+        <button class="secondary" id="cancelDownload" type="button">No, cancel</button>
+        <button class="primary" id="confirmDownload" type="button">Yes, download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/reports-page.js"></script>
+  
+</body>
+</html>

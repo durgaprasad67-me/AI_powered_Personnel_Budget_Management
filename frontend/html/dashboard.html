@@ -1,1 +1,368 @@
+<<<<<<< HEAD
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Dashboard</title></head><body><h1>Dashboard placeholder</h1></body></html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111c2a">
+
+  <title>FinSight AI | Finance Overview</title>
+
+
+  <!-- External Resources & Libraries             -->
+
+  
+  <!-- Typography: DM Sans for body text, Manrope for bold headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Charting Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Iconography: Lucide provides clean, modern SVG icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/dashboard.css?v=2">
+</head>
+
+<body>
+
+
+  <!-- SIDEBAR NAVIGATION                         -->
+
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Brand Logo & Tagline -->
+    <a class="brand" href="#overview">
+      <span class="brand-icon">
+        <i data-lucide="chart-no-axes-combined"></i>
+      </span>
+      <span>
+        <div class="brand-name">FinSight AI</div>
+        <div class="brand-tag">Smarter Finance. Brighter Future.</div>
+      </span>
+    </a>
+
+    <div class="section-label">Your workspace</div>
+
+    <!-- Main Navigation Links -->
+    <nav class="nav">
+      <a class="active" href="#overview" data-page="Overview">
+        <i data-lucide="layout-dashboard"></i> Overview
+      </a>
+      <a href="#transactions" data-page="Transactions">
+        <i data-lucide="arrow-left-right"></i> Transactions
+      </a>
+      <a href="#budgets" data-page="Budgets">
+        <i data-lucide="wallet"></i> Budgets
+      </a>
+      <a href="#goals" data-page="Financial Goals">
+        <i data-lucide="target"></i> Financial goals
+      </a>
+      <a href="#insights" data-page="AI Insights">
+        <i data-lucide="sparkles"></i> AI insights
+      </a>
+      <a href="#analytics" data-page="Analytics">
+        <i data-lucide="chart-column-increasing"></i> Analytics
+      </a>
+      <a href="#reports" data-page="Reports">
+        <i data-lucide="file-chart-column"></i> Reports
+      </a>
+      <a href="imports.html" data-page="Import data">
+        <i data-lucide="upload"></i> Import data
+      </a>
+    </nav>
+
+    <!-- Bottom Sidebar Widgets (Tips & User Profile) -->
+    <div class="side-bottom">
+      <div class="side-tip">
+        <div class="side-tip-title">
+          <i data-lucide="lightbulb"></i> A little money wisdom
+        </div>
+        <p>Small, consistent reviews can make your spending easier to understand and your goals easier to reach.</p>
+      </div>
+
+      <div class="account">
+        <!-- Developer Note: data-user-initial can be populated via JS -->
+        <span class="avatar" data-user-initial>D</span>
+        <div>
+          <div class="account-name" data-user-name>Personal account</div>
+          <div class="account-sub">Personal account</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- MAIN CONTENT AREA                          -->
+
+  <main class="main" id="overview">
+
+    <!-- Header / Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-btn" id="menuBtn" aria-label="Open navigation">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb">
+          Workspace <span>/</span> <strong id="crumb">Overview</strong>
+        </div>
+      </div>
+
+      <!-- User Actions (Date Picker, Notifications, Profile) -->
+      <div class="top-actions">
+        <button class="period-btn" id="dateBtn" type="button" aria-label="Select dashboard month">
+          <i data-lucide="calendar-days"></i>
+          <span id="dateLabel"></span>
+          <i data-lucide="chevron-down"></i>
+        </button>
+
+        <button class="icon-btn" id="notifyBtn" aria-label="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notification-count" id="notificationCount" hidden>0</span>
+        </button>
+
+        <button class="profile-btn" id="profileBtn">
+          <span class="avatar" data-user-initial>P</span>
+          <span data-user-name>Personal account</span>
+          <i data-lucide="chevron-down"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dashboard Content Wrapper -->
+    <div class="content">
+
+      <!-- Greeting & Context -->
+      <div class="welcome-row">
+        <div>
+          <div class="eyebrow">Your financial snapshot</div>
+          <h1 id="greetingTitle">Your financial snapshot</h1>
+          <p>A clearer view of your money starts here. Here's your monthly overview.</p>
+        </div>
+        <div class="period-select">
+          <i data-lucide="calendar-range"></i>
+          <span id="periodText"></span>
+        </div>
+      </div>
+
+      <!-- Hero Section: High-level financial summary -->
+      <section class="hero">
+        <div class="hero-main">
+          <div class="hero-label">
+            <i data-lucide="wallet"></i> Available after cash flow
+          </div>
+          <div class="hero-total" id="available">
+            <span id="availableValue">—</span> <small>this month</small>
+          </div>
+          <div class="hero-caption">Cash inflows less expenses, investments, and loan repayments for the selected month</div>
+          
+          <!-- Visual Progress Bar -->
+          <div class="hero-progress">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <!-- Color Legend for Progress Bar -->
+          <div class="hero-legend">
+            <span><i style="background:#ffb5ae"></i>Spent · <span id="spentPercent">0%</span></span>
+            <span><i style="background:#b8a6f4"></i>Invested · <span id="investedPercent">0%</span></span>
+            <span><i style="background:#8fc8b5"></i>Available · <span id="availablePercent">0%</span></span>
+          </div>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-side-top">
+            <span>Monthly saving rate</span>
+            <span class="trend-pill">↑ Healthy habit</span>
+          </div>
+          <div class="hero-side-value" id="savingRate">—</div>
+          <div class="hero-side-copy">
+            You’re keeping a portion of your income available for future plans. Keep building a routine that works for you.
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI Grid: Quick stats (Income, Expenses, Investments, Loans) -->
+      <section class="kpis">
+        <article class="kpi">
+          <div class="kpi-head">
+            Total income <span class="kpi-icon"><i data-lucide="trending-up"></i></span>
+          </div>
+          <div class="kpi-value" id="incomeValue">—</div>
+          <div class="kpi-foot">
+            <strong>Live</strong> <span>selected month</span>
+          </div>
+        </article>
+
+        <article class="kpi allocated-kpi">
+          <div class="kpi-head">
+            Allocated budget <span class="kpi-icon lav"><i data-lucide="wallet-cards"></i></span>
+          </div>
+          <div class="kpi-value" id="allocatedValue">—</div>
+          <div class="kpi-foot">
+            <strong>Planned</strong> <span>active budgets</span>
+          </div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-head">
+            Available allocation <span class="kpi-icon"><i data-lucide="wallet"></i></span>
+          </div>
+          <div class="kpi-value" id="availableAllocatedValue">—</div>
+          <div class="kpi-foot">
+            <strong>Remaining</strong> <span>active budgets</span>
+          </div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-head">
+            Total expenses <span class="kpi-icon coral"><i data-lucide="trending-down"></i></span>
+          </div>
+          <div class="kpi-value" id="expenseValue">—</div>
+          <div class="kpi-foot">
+            <strong>Live</strong> <span>selected month</span>
+          </div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-head">
+            Investments <span class="kpi-icon blue"><i data-lucide="chart-no-axes-combined"></i></span>
+          </div>
+          <div class="kpi-value" id="investmentValue">—</div>
+          <div class="kpi-foot">
+            <strong>Live</strong> <span>selected month</span>
+          </div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-head">
+            Net loan cash flow <span class="kpi-icon lav"><i data-lucide="landmark"></i></span>
+          </div>
+          <div class="kpi-value" id="loanValue">—</div>
+          <div class="kpi-foot">
+            <strong>Live</strong> <span>selected month</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Analytics Charts Section -->
+      <section class="charts-grid" id="analytics">
+        
+        <!-- Cashflow Chart -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Income vs. expenses</h2>
+              <div class="card-subtitle">Track how your cash flow changes over time</div>
+            </div>
+            <select class="select" id="chartPeriod" aria-label="Chart time period">
+              <option value="6">Last 6 months</option>
+              <option value="12">Last 12 months</option>
+            </select>
+          </div>
+          <div class="chart-box">
+            <canvas id="cashflowChart"></canvas>
+          </div>
+        </article>
+
+        <!-- Spending Breakdown Donut Chart -->
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Spending breakdown</h2>
+              <div class="card-subtitle">Your expenses grouped by category</div>
+            </div>
+            <button class="subtle-btn" data-go="Analytics">Explore ↗</button>
+          </div>
+          <div class="spending-layout">
+            <div class="donut-box">
+              <canvas id="spendingChart"></canvas>
+              <div class="donut-center">
+                <strong id="categoryTotal">—</strong>
+                <span>Total expenses</span>
+              </div>
+            </div>
+            <!-- Populated via JS -->
+            <div class="legend" id="categoryLegend"></div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- Actionable Data: Transactions, Budgets, and Goals -->
+      <section class="lower-grid">
+        
+        <!-- Recent Transactions List -->
+        <article class="card" id="transactions">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recent transactions</h2>
+              <div class="card-subtitle">Your latest money activity</div>
+            </div>
+            <button class="subtle-btn" data-go="Transactions">View all ↗</button>
+          </div>
+          <div class="transaction-list" id="transactionList"></div>
+        </article>
+
+        <!-- Budget Tracker List -->
+        <article class="card" id="budgets">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Budget tracker</h2>
+              <div class="card-subtitle">Spending against your limits</div>
+            </div>
+            <button class="subtle-btn" data-go="Budgets">All budgets ↗</button>
+          </div>
+          <div class="budget-list" id="budgetList"></div>
+        </article>
+
+        <!-- Financial Goals List -->
+        <article class="card" id="goals">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Your money goals</h2>
+              <div class="card-subtitle">Little steps add up</div>
+            </div>
+            <button class="subtle-btn" data-go="Financial Goals">View goals ↗</button>
+          </div>
+          <div class="goal-list" id="goalList"></div>
+        </article>
+
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span>© <span id="year"></span> FinSight AI · Make every rupee count.</span>
+        <span>Live data from the FinSight AI API</span>
+      </footer>
+
+    </div>
+  </main>
+
+  <div class="notification-modal" id="notificationModal" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" hidden>
+    <div class="notification-card">
+      <div class="notification-head">
+        <div><div class="eyebrow">Budget alerts</div><h2 id="notificationTitle">Notifications</h2></div>
+        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button><button class="secondary" id="deleteAllNotifications" type="button">Delete all</button><button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button></div>
+      </div>
+      <div class="notification-list" id="notificationList"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <output class="toast" id="toast" aria-live="polite"></output>
+
+  <!-- Custom JavaScript -->
+  <script src="../js/dashboard.js?v=3" defer></script>
+
+</body>
+</html>
+>>>>>>> 3d11468 (updated the some backend and frontend files)
