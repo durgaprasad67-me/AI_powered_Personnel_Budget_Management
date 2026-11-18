@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Monthly essentials",
+    "category": null,
+    "amount": 30000,
+    "period": "monthly",
+    "start_date": "2026-10-01"
+  },
+  {
+    "name": "Food and groceries",
+    "category": "food",
+    "amount": 5000,
+    "period": "monthly",
+    "start_date": "2026-10-01"
+  },
+  {
+    "name": "Transport",
+    "category": "transport",
+    "amount": 2500,
+    "period": "monthly",
+    "start_date": "2026-10-01"
+  },
+  {
+    "name": "Investing habit",
+    "category": "investment",
+    "amount": 7500,
+    "period": "monthly",
+    "start_date": "2026-10-01"
+  }
+]

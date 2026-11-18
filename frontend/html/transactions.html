@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FinSight AI | Transactions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/transactions-page.css">
+</head>
+<body data-page="Transactions">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menuBtn" type="button">☰</button>
+          <div class="breadcrumb">Workspace / <strong>Transactions</strong></div>
+        </div>
+        <span class="avatar">D</span>
+      </header>
+
+      <div class="content">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">Your money activity</div>
+            <h1>Transactions</h1>
+            <p class="subtitle">Manage your income and expenses.</p>
+          </div>
+          <button class="primary" id="addTransaction" type="button">+ Add transaction</button>
+        </div>
+
+        <section class="grid grid-4" id="transactionStats"></section>
+
+        <section class="card">
+          <div class="toolbar">
+            <input id="search" type="search" placeholder="Search transactions..." aria-label="Search transactions">
+            <select id="type" aria-label="Filter by transaction type">
+              <option value="">All types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+              <option value="investment">Investment</option>
+              <option value="investment_return">Investment return</option>
+              <option value="loan_taken">Loan taken</option>
+              <option value="loan_repaid">Loan repaid</option>
+              <option value="loan_given">Loan given</option>
+              <option value="loan_collected">Loan collected</option>
+            </select>
+            <select id="category" aria-label="Filter by category">
+              <option value="">All categories</option>
+            </select>
+            <input id="month" type="month" aria-label="Filter by month">
+            <button class="secondary" id="clearFilters" type="button">Clear filters</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="transactionRows">
+                <tr><td class="loading" colspan="6">Loading transactions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="transactionCount">Showing 0 transactions</span>
+            <div>
+              <button class="secondary" id="previousPage" type="button">Previous</button>
+              <button class="secondary" id="nextPage" type="button">Next</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="transactionModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="transactionTitle">Add transaction</h2>
+        <button class="close" id="closeTransaction" type="button">×</button>
+      </div>
+      <form class="form-grid" id="transactionForm" novalidate>
+        <input type="hidden" id="transactionId">
+        <div class="field">
+          <label for="transactionDate">Date</label>
+          <input id="transactionDate" type="date">
+          <span class="field-error" id="transactionDateError"></span>
+        </div>
+        <div class="field">
+          <label for="transactionType">Type</label>
+          <select id="transactionType" required>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="investment">Investment</option>
+            <option value="investment_return">Investment return</option>
+            <option value="loan_taken">Loan taken</option>
+            <option value="loan_repaid">Loan repaid</option>
+            <option value="loan_given">Loan given</option>
+            <option value="loan_collected">Loan collected</option>
+          </select>
+          <span class="field-error" id="transactionTypeError"></span>
+        </div>
+        <div class="field">
+          <label for="transactionAmount">Amount (₹)</label>
+          <input id="transactionAmount" type="number" min="0.01" step="0.01" required placeholder="0.00">
+          <span class="field-error" id="transactionAmountError"></span>
+        </div>
+        <div class="field">
+          <label for="transactionCategory">Category</label>
+          <select id="transactionCategory" required>
+            <option value="">Select category</option>
+            <option value="food">Food</option>
+            <option value="groceries">Groceries</option>
+            <option value="transport">Transport</option>
+            <option value="bills">Bills</option>
+            <option value="rent">Rent</option>
+            <option value="shopping">Shopping</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="health">Health</option>
+            <option value="education">Education</option>
+            <option value="home">Home</option>
+            <option value="utilities">Utilities</option>
+            <option value="salary">Salary</option>
+            <option value="freelance">Freelance</option>
+            <option value="interest">Interest</option>
+            <option value="refund">Refund</option>
+            <option value="investment">Investment</option>
+            <option value="loan">Loan</option>
+            <option value="__custom__">Custom</option>
+          </select>
+          <input id="transactionOtherCategory" type="text" minlength="2" maxlength="30" placeholder="Enter custom category" hidden>
+          <span class="field-error" id="transactionCategoryError"></span>
+        </div>
+        <div class="field full">
+          <label for="transactionDescription">Description <span class="label-optional">(optional)</span></label>
+          <input id="transactionDescription" maxlength="200" placeholder="Optional notes (max 200 chars)">
+          <span class="field-error" id="transactionDescriptionError"></span>
+        </div>
+        <div class="field full">
+          <button class="primary" id="saveTransaction" type="submit">Save transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal confirm-modal" id="deleteTransactionModal" role="dialog" aria-modal="true" aria-labelledby="deleteTransactionTitle" aria-describedby="deleteTransactionMessage">
+    <div class="modal-card confirm-card">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <h2 id="deleteTransactionTitle">Delete transaction?</h2>
+      <p id="deleteTransactionMessage">This transaction will be permanently deleted. Are you sure you want to continue?</p>
+      <div class="confirm-actions">
+        <button class="secondary" id="cancelDeleteTransaction" type="button">No, keep it</button>
+        <button class="danger confirm-delete" id="confirmDeleteTransaction" type="button">Yes, delete</button>
+      </div>
+    </div>
+  </div>
+  <div class="top-popup" id="topPopup" role="alert" aria-live="assertive" hidden>
+    <div class="top-popup-content">
+      <div class="top-popup-icon" id="topPopupIcon">⚠️</div>
+      <div class="top-popup-body">
+        <div class="top-popup-title" id="topPopupTitle"></div>
+        <div class="top-popup-message" id="topPopupMessage"></div>
+        <div class="top-popup-meta" id="topPopupMeta" hidden></div>
+      </div>
+      <button class="top-popup-close" id="topPopupClose" type="button" aria-label="Dismiss message">×</button>
+    </div>
+    <div class="top-popup-progress"><div class="top-popup-progress-bar" id="topPopupProgressBar"></div></div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/transactions-page.js"></script>
+</body>
+</html>

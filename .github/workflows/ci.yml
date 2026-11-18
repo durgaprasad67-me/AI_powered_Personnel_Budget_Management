@@ -1,0 +1,29 @@
+name: Backend checks
+on:
+  push:
+  pull_request:
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements-dev.txt
+      - run: python -m compileall backend/app
+      - run: python -m pytest tests -v
+        working-directory: backend
+      - run: python -c "import app.main"
+        working-directory: backend
+      - run: ruff check --select F,I,TID252 .
+        working-directory: backend
+      - run: ruff format --check .
+        working-directory: backend
+      - run: lint-imports
+        working-directory: backend
+      - run: "! grep -rnE '^(from|import) (google|pymongo|langchain)' app/api"
+        working-directory: backend
+      - run: "! grep -rn 'fastapi' app/services app/repositories app/domain"
+        working-directory: backend
+      - run: docker build -t finsight-backend backend

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinSight AI | Insights</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/insights-page.css">
+</head>
+<body data-page="AI insights">
+
+  <div class="app-shell">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar"></aside>
+    
+    <!-- Main Content -->
+    <main class="main">
+      
+      <!-- Top Navigation -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menuBtn">☰</button>
+          <div class="breadcrumb">
+            Workspace / <strong>AI insights</strong>
+          </div>
+        </div>
+        <span class="avatar">D</span>
+      </header>
+      
+      <!-- Page Content -->
+      <div class="content">
+        
+        <!-- Page Header -->
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">Powered by your financial data</div>
+            <h1>Ask FinSight AI</h1>
+            <p class="subtitle">Get clear answers about spending, budgets, and goals.</p>
+          </div>
+        </div>
+        
+        <!-- Insights Grid -->
+        <section class="grid grid-2 insights-grid">
+          
+          <!-- Insight Request Form -->
+          <article class="card insight-form-card">
+            <h2>Spending insight</h2>
+            <form id="insightForm">
+              <div class="field">
+                <div class="field-label-row">
+                  <label for="question">Question</label>
+                </div>
+                <textarea id="question" rows="6" minlength="3" required placeholder="Where am I spending most?"></textarea>
+              </div>
+              <label class="check">
+                <input type="checkbox" id="recommendations" checked> 
+                Include recommendations
+              </label>
+              <div class="form-actions">
+                <button class="primary" id="submitInsightBtn" type="submit">
+                  <i data-lucide="sparkles"></i> Get Insight
+                </button>
+                <button class="secondary" id="clearQuestionBtn" type="button">
+                  <i data-lucide="x"></i> Clear
+                </button>
+              </div>
+            </form>
+          </article>
+          
+          <!-- Insight Results Area (Bounded with Vertical Scrollbar) -->
+          <article class="card result-card" id="insightResult">
+            <div class="empty">
+              <div class="empty-icon"><i data-lucide="sparkles"></i></div>
+              <span>Your insight will appear here.</span>
+              <p>Ask a question about your spending, investments, or loans to get started.</p>
+            </div>
+          </article>
+
+        </section>
+        
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/insights-page.js"></script>
+  
+</body>
+</html>

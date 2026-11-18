@@ -1,0 +1,15 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    environment:
+      CHROMA_PERSIST_DIRECTORY: /data/chroma
+    env_file:
+      - ../backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/data/chroma
+
+volumes:
+  chroma_data:

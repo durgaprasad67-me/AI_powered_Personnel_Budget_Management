@@ -1,0 +1,32 @@
+date,amount,transaction_type,category,description
+2026-10-01,85000,income,salary,Monthly salary
+2026-10-02,18500,expense,housing,Apartment rent
+2026-10-03,4200,expense,utilities,Electricity and internet bill
+2026-10-04,680,expense,food,Weekly groceries
+2026-10-05,320,expense,transport,Metro and bus fares
+2026-10-06,1499,expense,subscriptions,Streaming and music subscriptions
+2026-10-07,2200,expense,health,Pharmacy and checkup
+2026-10-08,5000,investment,investment,Monthly index fund SIP
+2026-10-09,950,expense,food,Restaurant dinner
+2026-10-10,1800,expense,shopping,Household supplies
+2026-10-11,1200,loan_given,loans,Short term loan to Ravi
+2026-10-12,450,expense,transport,Ride share trips
+2026-10-13,780,expense,food,Lunches during work
+2026-10-14,2500,expense,education,Online course installment
+2026-10-15,12000,income,freelance,Freelance project payment
+2026-10-16,900,expense,housing,Apartment maintenance charge
+2026-10-17,620,expense,food,Groceries
+2026-10-18,3000,expense,utilities,Mobile and electricity bills
+2026-10-19,2500,investment,investment,Recurring deposit contribution
+2026-10-20,1100,expense,shopping,Clothing
+2026-10-21,400,expense,transport,Metro recharge
+2026-10-22,1500,expense,food,Family lunch
+2026-10-23,900,expense,personal,Salon and personal care
+2026-10-24,1200,loan_repaid,loans,Personal loan EMI
+2026-10-25,1400,expense,entertainment,Movie and recreation
+2026-10-26,750,expense,food,Groceries
+2026-10-27,900,expense,transport,Fuel
+2026-10-28,1500,investment_return,investment,Mutual fund redemption
+2026-10-29,650,expense,food,Restaurant lunch
+2026-10-30,2000,expense,shopping,New shoes
+2026-10-31,1200,loan_collected,loans,Ravi loan repayment

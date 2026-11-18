@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Emergency fund",
+    "description": "Build six months of essential living expenses.",
+    "target_amount": 180000,
+    "current_amount": 72000,
+    "target_date": "2027-06-30"
+  },
+  {
+    "name": "Annual travel fund",
+    "description": "Save for a planned domestic holiday.",
+    "target_amount": 60000,
+    "current_amount": 18500,
+    "target_date": "2027-03-31"
+  },
+  {
+    "name": "Laptop replacement",
+    "description": "Set aside money for a work laptop upgrade.",
+    "target_amount": 90000,
+    "current_amount": 30000,
+    "target_date": "2027-09-30"
+  }
+]
