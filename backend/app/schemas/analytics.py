@@ -18,6 +18,14 @@ class LoanSummary(BaseModel):
     collected: float
 
 
+class TypeDetail(BaseModel):
+    type: str
+    stream: str
+    total: float
+    count: int = 0
+    categories: dict[str, float] = Field(default_factory=dict)
+
+
 class MonthlyAnalyticsSummary(BaseModel):
     month: str
     total_income: float
@@ -27,6 +35,12 @@ class MonthlyAnalyticsSummary(BaseModel):
     loans: LoanSummary
     net_cash_flow: float
     category_breakdown: dict[str, float] = Field(default_factory=dict)
+    total_cash_inflow: float = 0.0
+    total_cash_outflow: float = 0.0
+    type_breakdown: dict[str, float] = Field(default_factory=dict)
+    outflow_categories: dict[str, float] = Field(default_factory=dict)
+    inflow_categories: dict[str, float] = Field(default_factory=dict)
+    type_details: list[TypeDetail] = Field(default_factory=list)
 
 
 class DashboardResponse(MonthlyAnalyticsSummary):

@@ -15,36 +15,82 @@ from app.schemas.insights import CategorySpending, SpendingSummary
 
 def build_monthly_summary(month: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     totals: dict[str, float] = {}
+    counts: dict[str, int] = {}
+    categories_by_type: dict[str, dict[str, float]] = {
+        kind: {} for kind in TRANSACTION_TYPES
+    }
     spending_by_category: dict[str, float] = {}
+    outflow_by_category: dict[str, float] = {}
+    inflow_by_category: dict[str, float] = {}
 
     for row in rows:
         kind = row["_id"]["type"]
-        total = row["total"]
-        totals[kind] = totals.get(kind, 0) + total
+        category = row["_id"].get("category") or "uncategorized"
+        total = float(row.get("total") or 0.0)
+        count = int(row.get("count") or 1)
+
+        totals[kind] = totals.get(kind, 0.0) + total
+        counts[kind] = counts.get(kind, 0) + count
+
+        if kind in categories_by_type:
+            categories_by_type[kind][category] = (
+                categories_by_type[kind].get(category, 0.0) + total
+            )
+
         if kind == "expense":
-            category = row["_id"]["category"]
             spending_by_category[category] = (
-                spending_by_category.get(category, 0) + total
+                spending_by_category.get(category, 0.0) + total
+            )
+
+        if kind in CASH_OUT_TYPES:
+            outflow_by_category[category] = (
+                outflow_by_category.get(category, 0.0) + total
+            )
+        elif kind in CASH_IN_TYPES:
+            inflow_by_category[category] = (
+                inflow_by_category.get(category, 0.0) + total
             )
 
     def amount(kind: str) -> float:
-        return round(totals.get(kind, 0), 2)
+        return round(totals.get(kind, 0.0), 2)
 
-    income = totals.get("income", 0)
-    expenses = totals.get("expense", 0)
-    cash_in = sum(totals.get(kind, 0) for kind in CASH_IN_TYPES)
-    cash_out = sum(totals.get(kind, 0) for kind in CASH_OUT_TYPES)
+    income = totals.get("income", 0.0)
+    expenses = totals.get("expense", 0.0)
+    cash_in = sum(totals.get(kind, 0.0) for kind in CASH_IN_TYPES)
+    cash_out = sum(totals.get(kind, 0.0) for kind in CASH_OUT_TYPES)
+
+    type_breakdown = {kind: amount(kind) for kind in TRANSACTION_TYPES}
+    type_details = [
+        {
+            "type": kind,
+            "stream": "inflow" if kind in CASH_IN_TYPES else "outflow",
+            "total": amount(kind),
+            "count": counts.get(kind, 0),
+            "categories": {
+                cat: round(val, 2)
+                for cat, val in sorted(
+                    categories_by_type.get(kind, {}).items(),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+            },
+        }
+        for kind in TRANSACTION_TYPES
+    ]
 
     return {
         "month": month,
         "total_income": round(income, 2),
         "total_expenses": round(expenses, 2),
         "balance": round(income - expenses, 2),
+        "total_cash_inflow": round(cash_in, 2),
+        "total_cash_outflow": round(cash_out, 2),
+        "net_cash_flow": round(cash_in - cash_out, 2),
         "investments": {
             "invested": amount("investment"),
             "returned": amount("investment_return"),
             "net_invested": round(
-                totals.get("investment", 0) - totals.get("investment_return", 0),
+                totals.get("investment", 0.0) - totals.get("investment_return", 0.0),
                 2,
             ),
         },
@@ -54,10 +100,31 @@ def build_monthly_summary(month: str, rows: list[dict[str, Any]]) -> dict[str, A
             "lent": amount("loan_given"),
             "collected": amount("loan_collected"),
         },
-        "net_cash_flow": round(cash_in - cash_out, 2),
+        "type_breakdown": type_breakdown,
+        "type_details": type_details,
         "category_breakdown": {
             category: round(total, 2)
-            for category, total in spending_by_category.items()
+            for category, total in sorted(
+                spending_by_category.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        },
+        "outflow_categories": {
+            category: round(total, 2)
+            for category, total in sorted(
+                outflow_by_category.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        },
+        "inflow_categories": {
+            category: round(total, 2)
+            for category, total in sorted(
+                inflow_by_category.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
         },
     }
 

@@ -257,34 +257,48 @@
         <article class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Income vs. expenses</h2>
-              <div class="card-subtitle">Track how your cash flow changes over time</div>
+              <h2 class="card-title" id="cashflowChartTitle">Cash flow &amp; activity by type</h2>
+              <div class="card-subtitle" id="cashflowChartSubtitle">Track all inflows, outflows, investments &amp; loans over time</div>
             </div>
-            <select class="select" id="chartPeriod" aria-label="Chart time period">
-              <option value="6">Last 6 months</option>
-              <option value="12">Last 12 months</option>
-            </select>
+            <div class="chart-header-actions">
+              <select class="select" id="cashflowViewMode" aria-label="Cash flow chart view mode">
+                <option value="all_types">All transaction types</option>
+                <option value="cash_flow">Inflow vs. Outflow</option>
+                <option value="income_expense">Income vs. Expenses</option>
+              </select>
+              <select class="select" id="chartPeriod" aria-label="Chart time period">
+                <option value="6">Last 6 months</option>
+                <option value="12">Last 12 months</option>
+              </select>
+            </div>
           </div>
           <div class="chart-box">
             <canvas id="cashflowChart"></canvas>
           </div>
         </article>
 
-        <!-- Spending Breakdown Donut Chart -->
+        <!-- Spending & Distribution Breakdown Donut Chart -->
         <article class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Spending breakdown</h2>
-              <div class="card-subtitle">Your expenses grouped by category</div>
+              <h2 class="card-title" id="pieChartTitle">Distribution breakdown</h2>
+              <div class="card-subtitle" id="pieChartSubtitle">All financial activity types for this month</div>
             </div>
-            <button class="subtle-btn" data-go="Analytics">Explore ↗</button>
+            <div class="chart-header-actions">
+              <select class="select" id="pieViewMode" aria-label="Distribution chart view mode">
+                <option value="all_types">All transaction types</option>
+                <option value="outflow_categories">Cash outflows (categories)</option>
+                <option value="inflow_categories">Cash inflows (categories)</option>
+              </select>
+              <button class="subtle-btn" data-go="Analytics">Explore ↗</button>
+            </div>
           </div>
           <div class="spending-layout">
             <div class="donut-box">
               <canvas id="spendingChart"></canvas>
               <div class="donut-center">
                 <strong id="categoryTotal">—</strong>
-                <span>Total expenses</span>
+                <span id="categoryLabel">All transaction types</span>
               </div>
             </div>
             <!-- Populated via JS -->
@@ -348,7 +362,7 @@
     <div class="notification-card">
       <div class="notification-head">
         <div><div class="eyebrow">Budget alerts</div><h2 id="notificationTitle">Notifications</h2></div>
-        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button><button class="secondary" id="deleteAllNotifications" type="button">Delete all</button><button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button></div>
+        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button><button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button></div>
       </div>
       <div class="notification-list" id="notificationList"></div>
     </div>

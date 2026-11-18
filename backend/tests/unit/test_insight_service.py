@@ -64,6 +64,40 @@ def test_spending_insights_valid_json_clears_recommendations():
     assert result.recommendations == []
 
 
+def test_spending_insights_normalizes_extra_recommendation_fields_and_markdown():
+    # Tests that extra fields in recommendations, markdown wrapping, and dict findings don't trigger invalid structure error
+    response_text = (
+        'Here is your financial analysis:\n```json\n'
+        '{"summary":"You spent most on groceries.",'
+        '"key_findings":[{"finding":"Groceries was ₹7,700"},{"text":"Investments were ₹16,000"}],'
+        '"recommendations":[{"title":"Review groceries","explanation":"Shop with a list","category":"Food","priority":"high"}],'
+        '"limitations":"Analysis period Nov 1 - Nov 29"}\n```\nHope this helps!'
+    )
+    client = fake_client(response_text)
+    service = InsightService(
+        FakeAnalytics(),
+        lambda _api_key: client,
+        key_pool=GeminiKeyPool(["unit-test-key"]),
+    )
+
+    result = asyncio.run(
+        service.spending_insights(
+            SpendingInsightRequest(
+                question="where i spent most on this month ?",
+                include_recommendations=True,
+            )
+        )
+    )
+
+    assert result.summary == "You spent most on groceries."
+    assert len(result.key_findings) == 2
+    assert "Groceries was ₹7,700" in result.key_findings[0]
+    assert len(result.recommendations) == 1
+    assert result.recommendations[0].title == "Review groceries"
+    assert result.recommendations[0].explanation == "Shop with a list"
+    assert result.limitations == ["Analysis period Nov 1 - Nov 29"]
+
+
 @pytest.mark.parametrize(
     ("question", "expected_description"),
     [

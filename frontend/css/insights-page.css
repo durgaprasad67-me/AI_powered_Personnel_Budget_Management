@@ -1,6 +1,266 @@
-.result-card { min-height: 320px; }
-.result-card h2 { margin-top: 0; }
-.result-section { margin: 18px 0; }
-.result-section h3 { margin-bottom: 8px; color: #668f83; font-size: 12px; text-transform: uppercase; }
-.result-section ul { padding-left: 20px; line-height: 1.7; }
-.check { display: flex; gap: 8px; margin: 14px 0; color: var(--muted); font-size: 12px; }
+/* ==========================================================================
+   FinSight AI - Insights Page Stylesheet
+   Vertical scroll container, bounded card heights & Overview palette
+   ========================================================================== */
+
+.insights-grid {
+  align-items: stretch;
+}
+
+/* Form Card */
+.insight-form-card {
+  height: 540px;
+  max-height: 540px;
+  display: flex;
+  flex-direction: column;
+}
+
+.insight-form-card h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-family: Manrope, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1d2a3d;
+}
+
+.insight-form-card form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+.insight-form-card .field {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.insight-form-card textarea {
+  flex: 1 1 auto;
+  min-height: 180px;
+  resize: none;
+  line-height: 1.6;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.field-label-row label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.check input {
+  cursor: pointer;
+}
+
+/* Form Actions Button Row with Space Around */
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.form-actions .primary,
+.form-actions .secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-family: Manrope, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.form-actions .primary {
+  background: var(--navy);
+  color: #fff;
+  flex: 1 1 auto;
+}
+
+.form-actions .primary:hover {
+  background: var(--navy2);
+}
+
+.form-actions .secondary {
+  background: #eaf0ee;
+  color: #3b524c;
+  border: 1px solid var(--line);
+  padding: 11px 16px;
+}
+
+.form-actions .secondary:hover {
+  background: #dce7e4;
+  color: var(--navy);
+}
+
+.form-actions svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Result Card - Fixed Bounded Height with Vertical Scrollbar */
+.result-card {
+  height: 540px;
+  max-height: 540px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  scroll-behavior: smooth;
+  border-radius: var(--radius);
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+/* Custom Sleek Scrollbar matching Overview theme */
+.result-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-card::-webkit-scrollbar-track {
+  background: #f1f5f4;
+  border-radius: 99px;
+}
+
+.result-card::-webkit-scrollbar-thumb {
+  background: #cbd6d3;
+  border-radius: 99px;
+}
+
+.result-card::-webkit-scrollbar-thumb:hover {
+  background: #9eafab;
+}
+
+/* Result Typography & Structure */
+.result-card h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-family: Manrope, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1d2a3d;
+  line-height: 1.5;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.result-section {
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+}
+
+.result-section h3 {
+  margin: 0 0 10px;
+  color: #3b7362;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.result-section ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.7;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.result-section li {
+  margin-bottom: 6px;
+}
+
+.result-section li:last-child {
+  margin-bottom: 0;
+}
+
+.result-section li strong {
+  color: var(--navy);
+}
+
+/* Empty & Loading States */
+.result-card .empty,
+.result-card .loading {
+  height: 100%;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  gap: 10px;
+  padding: 20px;
+}
+
+.empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eaf0ee;
+  color: #4f746b;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+
+.empty-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.result-card .empty p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 280px;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .insight-form-card,
+  .result-card {
+    height: auto;
+    max-height: 500px;
+  }
+}

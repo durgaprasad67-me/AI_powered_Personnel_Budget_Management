@@ -183,10 +183,14 @@ class BudgetRepository:
         user_id: str = DEFAULT_CURRENT_USER_ID,
         exclude_transaction_id: int | None = None,
     ) -> float:
+        from app.domain.transaction_types import CASH_OUT_TYPES
+
         query: dict[str, Any] = {
             "date": {"$gte": start_date, "$lte": end_date},
         }
-        if transaction_type != "all":
+        if transaction_type == "all":
+            query["transaction_type"] = {"$in": list(CASH_OUT_TYPES)}
+        else:
             query["transaction_type"] = transaction_type
         category_values = _category_values(category)
         if category_values:
@@ -218,10 +222,26 @@ class BudgetRepository:
         exclude_transaction_id: int | None = None,
     ) -> dict[str, Any]:
         """Compute monthly budget status, spending, and remaining amount in IST."""
+        from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
+        from app.core.config import get_settings
+
+        settings = get_settings()
         dt = Date.fromisoformat(str(date)[:10])
         month_start = Date(dt.year, dt.month, 1).isoformat()
         month_end = default_budget_end_date(Date(dt.year, dt.month, 1)).isoformat()
         month_name = dt.strftime("%B %Y")
+
+        # Cash inflows do not follow budget rules
+        if transaction_type in CASH_IN_TYPES:
+            return {
+                "has_budget": False,
+                "month": month_name,
+                "allocated_budget": None,
+                "spent_amount": 0.0,
+                "remaining_budget": None,
+                "max_allowed": settings.max_inflow_amount,
+                "warning": None,
+            }
 
         matching_budgets: list[dict[str, Any]] = []
         async for doc in self.budgets.find({}):
@@ -307,6 +327,12 @@ class BudgetRepository:
         additional_transactions: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
         """Return budgets that would exceed their limits after a transaction."""
+        from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
+
+        # Cash inflows do not follow budget rules
+        if transaction_type in CASH_IN_TYPES:
+            return []
+
         budgets = [serialize_budget(item) async for item in self.budgets.find({})]
         violations = []
         for budget in budgets:
@@ -329,7 +355,9 @@ class BudgetRepository:
             budget_category_values = _category_values(budget.get("category"))
             if budget_category_values:
                 query["category"] = {"$in": budget_category_values}
-            if budget_type != "all":
+            if budget_type == "all":
+                query["transaction_type"] = {"$in": list(CASH_OUT_TYPES)}
+            else:
                 query["transaction_type"] = budget_type
             if exclude_transaction_id is not None:
                 query["_id"] = {"$ne": exclude_transaction_id}
@@ -354,7 +382,10 @@ class BudgetRepository:
                 staged_category = staged.get("category")
                 if not start_date <= staged_date <= end_date:
                     continue
-                if budget_type != "all" and staged_type != budget_type:
+                if budget_type == "all":
+                    if staged_type not in CASH_OUT_TYPES:
+                        continue
+                elif staged_type != budget_type:
                     continue
                 if (
                     budget_category_values

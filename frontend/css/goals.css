@@ -3,3 +3,97 @@
 .goal-row, .goal-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .goal-meta { color: var(--muted); font-size: 12px; }
 .goal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Delete Financial Goal Confirmation Modal */
+.confirm-modal {
+  z-index: 80;
+}
+
+.confirm-card {
+  width: min(460px, 100%);
+  padding: 30px;
+  text-align: center;
+  border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(17, 28, 42, .25);
+}
+
+.confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff0ef;
+  color: #b44b44;
+  font: 800 24px Manrope, sans-serif;
+}
+
+.confirm-card h2 {
+  margin: 0;
+  color: #253247;
+  font-size: 20px;
+}
+
+.confirm-card p {
+  margin: 12px 0 16px;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 13.5px;
+}
+
+.confirm-goal-details {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 16px 0 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.confirm-goal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confirm-goal-row span {
+  color: #64748b;
+}
+
+.confirm-goal-row strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-actions button {
+  min-width: 120px;
+}
+
+.confirm-actions .confirm-delete {
+  background: #c9574f;
+  color: #fff;
+}
+
+.confirm-actions .confirm-delete:hover {
+  background: #ad453e;
+}
+
+@media (max-width: 440px) {
+  .confirm-actions {
+    flex-direction: column-reverse;
+  }
+  .confirm-actions button {
+    width: 100%;
+  }
+}

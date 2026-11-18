@@ -47,27 +47,40 @@
         </div>
         
         <!-- Insights Grid -->
-        <section class="grid grid-2">
+        <section class="grid grid-2 insights-grid">
           
           <!-- Insight Request Form -->
-          <article class="card">
+          <article class="card insight-form-card">
             <h2>Spending insight</h2>
             <form id="insightForm">
               <div class="field">
-                <label for="question">Question</label>
+                <div class="field-label-row">
+                  <label for="question">Question</label>
+                </div>
                 <textarea id="question" rows="6" minlength="3" required placeholder="Where am I spending most?"></textarea>
               </div>
               <label class="check">
                 <input type="checkbox" id="recommendations" checked> 
                 Include recommendations
               </label>
-              <button class="primary" type="submit">Analyze my finances</button>
+              <div class="form-actions">
+                <button class="primary" id="submitInsightBtn" type="submit">
+                  <i data-lucide="sparkles"></i> Get Insight
+                </button>
+                <button class="secondary" id="clearQuestionBtn" type="button">
+                  <i data-lucide="x"></i> Clear
+                </button>
+              </div>
             </form>
           </article>
           
-          <!-- Insight Results Area -->
+          <!-- Insight Results Area (Bounded with Vertical Scrollbar) -->
           <article class="card result-card" id="insightResult">
-            <div class="empty">Your insight will appear here.</div>
+            <div class="empty">
+              <div class="empty-icon"><i data-lucide="sparkles"></i></div>
+              <span>Your insight will appear here.</span>
+              <p>Ask a question about your spending, investments, or loans to get started.</p>
+            </div>
           </article>
 
         </section>

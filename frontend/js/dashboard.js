@@ -31,6 +31,34 @@ let toastTimeout = null;
 const NOTIFICATION_STORAGE_KEY = "finsight.dashboard.notifications";
 let notifications = [];
 
+let selectedCashflowView = "all_types";
+let selectedPieView = "all_types";
+let cashflowHistoryCache = [];
+
+const OVERVIEW_TRANSACTION_TYPES = [
+  { key: "income", label: "Income", color: "#8fc8b5" },
+  { key: "expense", label: "Expenses", color: "#ffb5ae" },
+  { key: "investment", label: "Investments", color: "#b8a6f4" },
+  { key: "investment_return", label: "Investment Returns", color: "#bfd6f2" },
+  { key: "loan_taken", label: "Loans Borrowed", color: "#f4d59c" },
+  { key: "loan_repaid", label: "Loans Repaid", color: "#e5b5d1" },
+  { key: "loan_given", label: "Loans Lent", color: "#fae2b8" },
+  { key: "loan_collected", label: "Loans Collected", color: "#9eafab" },
+];
+
+const OVERVIEW_CHART_COLORS = [
+  "#8fc8b5",
+  "#ffb5ae",
+  "#b8a6f4",
+  "#bfd6f2",
+  "#f4d59c",
+  "#9eafab",
+  "#e5b5d1",
+  "#a3d6c5",
+  "#f7c5ba",
+  "#cbbeef",
+];
+
 /* =========================================
    DOM Utilities
 ========================================= */
@@ -231,8 +259,6 @@ function renderSummary(summary) {
   setText("allocatedValue", amount(summary.allocated_budget || 0));
   setText("availableAllocatedValue", amount(summary.available_allocated_budget || 0));
 
-  setText("categoryTotal", amount(expenses));
-
   setText(
     "savingRate",
     `${Math.max(0, (balance / denominator) * 100).toFixed(1)}%`,
@@ -258,7 +284,6 @@ function renderSummary(summary) {
   setText("periodText", monthLabel);
   setText("dateLabel", monthLabel);
 
-  renderCategoryLegend(summary.category_breakdown || {});
   renderHeroProgress(expenses, Number(summary.investments?.invested || 0), availableCash, cashIn, cashOut);
 }
 
@@ -266,28 +291,30 @@ function renderSummary(summary) {
    Category Legend
 ========================================= */
 
-function renderCategoryLegend(categoryBreakdown) {
+function renderCategoryLegend(entries, colors = []) {
   const legend = getElement("categoryLegend");
 
   if (!legend) return;
 
   legend.replaceChildren();
 
-  const entries = Object.entries(categoryBreakdown);
+  const list = Array.isArray(entries) ? entries : Object.entries(entries || {});
 
-  if (!entries.length) {
-    legend.textContent = "No expense categories for this month.";
+  if (!list.length) {
+    legend.textContent = "No data recorded for this view.";
     return;
   }
 
-  entries.forEach(([category, total]) => {
+  list.forEach(([category, total], index) => {
     const item = document.createElement("div");
     const marker = document.createElement("i");
     const label = document.createElement("span");
     const value = document.createElement("b");
 
     item.className = "legend-row";
-    marker.style.backgroundColor = "#8eb3a4";
+    const color = colors[index % colors.length] || "#8fc8b5";
+    marker.style.backgroundColor = color;
+    marker.style.boxShadow = `0 0 0 2px ${color}33`;
     label.textContent = category;
     value.textContent = amount(total);
 
@@ -337,13 +364,82 @@ function renderHeroProgress(expenses, invested, balance, cashIn, cashOut) {
    Chart Rendering
 ========================================= */
 
-function renderCashflowChart(labels, incomes, expenses) {
+function renderCashflowChart(labels, historyData) {
   const canvas = getElement("cashflowChart");
 
   if (!canvas || !window.Chart) return;
 
   if (cashflowChartInstance) {
     cashflowChartInstance.destroy();
+    cashflowChartInstance = null;
+  }
+
+  let datasets = [];
+
+  if (selectedCashflowView === "all_types") {
+    // Generate datasets for all 8 transaction types using Overview palette
+    datasets = OVERVIEW_TRANSACTION_TYPES.map((typeObj) => ({
+      label: typeObj.label,
+      data: historyData.map((item) => {
+        if (!item || typeof item !== "object") return 0;
+        if (item.type_breakdown && item.type_breakdown[typeObj.key] !== undefined) {
+          return Number(item.type_breakdown[typeObj.key] || 0);
+        }
+        if (typeObj.key === "income") return Number(item.total_income || 0);
+        if (typeObj.key === "expense") return Number(item.total_expenses || 0);
+        if (typeObj.key === "investment") return Number(item.investments?.invested || 0);
+        if (typeObj.key === "investment_return") return Number(item.investments?.returned || 0);
+        if (typeObj.key === "loan_taken") return Number(item.loans?.borrowed || 0);
+        if (typeObj.key === "loan_repaid") return Number(item.loans?.repaid || 0);
+        if (typeObj.key === "loan_given") return Number(item.loans?.lent || 0);
+        if (typeObj.key === "loan_collected") return Number(item.loans?.collected || 0);
+        return 0;
+      }),
+      backgroundColor: typeObj.color,
+      borderRadius: 4,
+    }));
+
+    // Keep active datasets that have values, or fallback to first two
+    const active = datasets.filter((ds) => ds.data.some((val) => val > 0));
+    datasets = active.length > 0 ? active : datasets.slice(0, 2);
+
+  } else if (selectedCashflowView === "cash_flow") {
+    datasets = [
+      {
+        label: "Cash Inflow",
+        data: historyData.map((item) => Number(item?.total_cash_inflow ?? item?.total_income ?? 0)),
+        backgroundColor: "#8fc8b5",
+        borderRadius: 4,
+      },
+      {
+        label: "Cash Outflow",
+        data: historyData.map((item) => Number(item?.total_cash_outflow ?? item?.total_expenses ?? 0)),
+        backgroundColor: "#ffb5ae",
+        borderRadius: 4,
+      },
+      {
+        label: "Net Cash Flow",
+        data: historyData.map((item) => Number(item?.net_cash_flow ?? (Number(item?.total_income || 0) - Number(item?.total_expenses || 0)))),
+        backgroundColor: "#bfd6f2",
+        borderRadius: 4,
+      },
+    ];
+  } else {
+    // income_expense
+    datasets = [
+      {
+        label: "Income",
+        data: historyData.map((item) => Number(item?.total_income ?? 0)),
+        backgroundColor: "#8fc8b5",
+        borderRadius: 4,
+      },
+      {
+        label: "Expenses",
+        data: historyData.map((item) => Number(item?.total_expenses ?? 0)),
+        backgroundColor: "#ffb5ae",
+        borderRadius: 4,
+      },
+    ];
   }
 
   cashflowChartInstance = new Chart(canvas, {
@@ -351,22 +447,7 @@ function renderCashflowChart(labels, incomes, expenses) {
 
     data: {
       labels,
-
-      datasets: [
-        {
-          label: "Income",
-          data: incomes,
-          backgroundColor: "#8fc8b5",
-          borderRadius: 6,
-        },
-
-        {
-          label: "Expenses",
-          data: expenses,
-          backgroundColor: "#ffb5ae",
-          borderRadius: 6,
-        },
-      ],
+      datasets,
     },
 
     options: {
@@ -381,9 +462,20 @@ function renderCashflowChart(labels, incomes, expenses) {
       plugins: {
         legend: {
           position: "bottom",
+          labels: {
+            font: { family: "DM Sans", size: 11 },
+            color: "#56636d",
+            usePointStyle: true,
+            boxWidth: 8,
+          },
         },
 
         tooltip: {
+          backgroundColor: "#111c2a",
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { family: "Manrope", size: 12, weight: "700" },
+          bodyFont: { family: "DM Sans", size: 11 },
           callbacks: {
             label(context) {
               return `${context.dataset.label}: ${amount(context.raw)}`;
@@ -395,11 +487,24 @@ function renderCashflowChart(labels, incomes, expenses) {
       scales: {
         y: {
           beginAtZero: true,
-
+          grid: {
+            color: "rgba(224, 231, 230, 0.7)",
+          },
           ticks: {
+            font: { family: "DM Sans", size: 11 },
+            color: "#7f8b96",
             callback(value) {
               return currency.format(value);
             },
+          },
+        },
+        x: {
+          grid: {
+            display: false,
+          },
+          ticks: {
+            font: { family: "Manrope", size: 11, weight: "600" },
+            color: "#17202d",
           },
         },
       },
@@ -408,19 +513,80 @@ function renderCashflowChart(labels, incomes, expenses) {
 }
 
 /* =========================================
-   Spending Doughnut Chart
+   Spending & Distribution Doughnut Chart
 ========================================= */
 
-function renderSpendingChart(categoryBreakdown) {
+function renderSpendingChart(summary = dashboardData) {
   const canvas = getElement("spendingChart");
 
-  if (!canvas || !window.Chart) return;
+  if (!canvas || !window.Chart || !summary) return;
 
   if (spendingChartInstance) {
     spendingChartInstance.destroy();
+    spendingChartInstance = null;
   }
 
-  const entries = Object.entries(categoryBreakdown || {});
+  const titleEl = getElement("pieChartTitle");
+  const subEl = getElement("pieChartSubtitle");
+  const centerTotalEl = getElement("categoryTotal");
+  const centerLabelEl = getElement("categoryLabel");
+
+  let entries = [];
+  let colors = [];
+  let totalAmount = 0;
+  let centerLabelText = "All transaction types";
+
+  if (selectedPieView === "all_types") {
+    if (titleEl) titleEl.textContent = "Distribution breakdown";
+    if (subEl) subEl.textContent = "All financial activity types for this month";
+    centerLabelText = "All transaction types";
+
+    const typeConfig = [
+      ["Income", Number(summary.type_breakdown?.income ?? summary.total_income ?? 0), "#8fc8b5"],
+      ["Expenses", Number(summary.type_breakdown?.expense ?? summary.total_expenses ?? 0), "#ffb5ae"],
+      ["Investments", Number(summary.type_breakdown?.investment ?? summary.investments?.invested ?? 0), "#b8a6f4"],
+      ["Investment Returns", Number(summary.type_breakdown?.investment_return ?? summary.investments?.returned ?? 0), "#bfd6f2"],
+      ["Loans Borrowed", Number(summary.type_breakdown?.loan_taken ?? summary.loans?.borrowed ?? 0), "#f4d59c"],
+      ["Loans Repaid", Number(summary.type_breakdown?.loan_repaid ?? summary.loans?.repaid ?? 0), "#e5b5d1"],
+      ["Loans Lent", Number(summary.type_breakdown?.loan_given ?? summary.loans?.lent ?? 0), "#fae2b8"],
+      ["Loans Collected", Number(summary.type_breakdown?.loan_collected ?? summary.loans?.collected ?? 0), "#9eafab"],
+    ];
+
+    const activeTypes = typeConfig.filter(([, val]) => val > 0);
+    entries = activeTypes.map(([name, val]) => [name, val]);
+    colors = activeTypes.map(([, , col]) => col);
+    totalAmount = entries.reduce((acc, [, val]) => acc + val, 0);
+
+  } else if (selectedPieView === "inflow_categories") {
+    if (titleEl) titleEl.textContent = "Cash inflows by category";
+    if (subEl) subEl.textContent = "Income, returns, borrowings & collections";
+    centerLabelText = "Total inflows";
+
+    const rawCats = summary.inflow_categories || (summary.total_income ? { Income: summary.total_income } : {});
+    entries = Object.entries(rawCats).filter(([, val]) => Number(val) > 0);
+    totalAmount = Number(summary.total_cash_inflow || summary.total_income || 0);
+    colors = entries.map((_, i) => OVERVIEW_CHART_COLORS[i % OVERVIEW_CHART_COLORS.length]);
+
+  } else {
+    // outflow_categories (covers expenses, investments, repayments & lent amounts)
+    if (titleEl) titleEl.textContent = "Cash outflows by category";
+    if (subEl) subEl.textContent = "Expenses, investments, repayments & lent amounts";
+    centerLabelText = "Total outflows";
+
+    const rawCats = summary.outflow_categories || summary.category_breakdown || {};
+    entries = Object.entries(rawCats).filter(([, val]) => Number(val) > 0);
+    totalAmount = Number(summary.total_cash_outflow || summary.total_expenses || 0);
+    colors = entries.map((_, i) => OVERVIEW_CHART_COLORS[i % OVERVIEW_CHART_COLORS.length]);
+  }
+
+  if (centerTotalEl) {
+    centerTotalEl.textContent = amount(totalAmount);
+  }
+  if (centerLabelEl) {
+    centerLabelEl.textContent = centerLabelText;
+  }
+
+  renderCategoryLegend(entries, colors);
 
   if (!entries.length) {
     return;
@@ -435,19 +601,11 @@ function renderSpendingChart(categoryBreakdown) {
       datasets: [
         {
           data: entries.map(([, total]) => Number(total || 0)),
-
-          backgroundColor: [
-            "#8fc8b5",
-            "#ffb5ae",
-            "#b8a6f4",
-            "#bfd6f2",
-            "#f4d59c",
-            "#9eafab",
-            "#e5b5d1",
-          ],
-
+          backgroundColor: colors,
           borderWidth: 2,
           borderColor: "#ffffff",
+          borderRadius: 4,
+          spacing: 2,
         },
       ],
     },
@@ -455,7 +613,6 @@ function renderSpendingChart(categoryBreakdown) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-
       cutout: "72%",
 
       plugins: {
@@ -464,9 +621,16 @@ function renderSpendingChart(categoryBreakdown) {
         },
 
         tooltip: {
+          backgroundColor: "#111c2a",
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { family: "Manrope", size: 12, weight: "700" },
+          bodyFont: { family: "DM Sans", size: 11 },
           callbacks: {
             label(context) {
-              return `${context.label}: ${amount(context.raw)}`;
+              const val = context.raw || 0;
+              const pct = totalAmount > 0 ? ((val / totalAmount) * 100).toFixed(1) : 0;
+              return `${context.label}: ${amount(val)} (${pct}%)`;
             },
           },
         },
@@ -682,7 +846,7 @@ async function loadDashboard(month = selectedMonth) {
     renderDashboardLists(data);
     await addBudgetNotifications(data);
 
-    renderSpendingChart(data.category_breakdown || {});
+    renderSpendingChart(data);
 
     setText(
       "insightStatus",
@@ -718,7 +882,23 @@ function shiftMonth(month, offset) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-async function loadCashflowHistory(period = 6) {
+function renderCashflowChartFromCache() {
+  if (!cashflowHistoryCache || !cashflowHistoryCache.length) return;
+
+  const labels = cashflowHistoryCache.map((data) =>
+    new Date(`${data.month}-01T00:00:00`).toLocaleDateString(
+      "en-IN",
+      {
+        month: "short",
+        year: "2-digit",
+      },
+    ),
+  );
+
+  renderCashflowChart(labels, cashflowHistoryCache);
+}
+
+async function loadCashflowHistory(period = selectedChartPeriod) {
   selectedChartPeriod = Number(period);
 
   const months = [];
@@ -732,35 +912,15 @@ async function loadCashflowHistory(period = 6) {
       months.map((month) => fetchDashboard(month)),
     );
 
-    const labels = history.map((data) =>
-      new Date(`${data.month}-01T00:00:00`).toLocaleDateString(
-        "en-IN",
-        {
-          month: "short",
-          year: "2-digit",
-        },
-      ),
-    );
-
-    const incomes = history.map((data) =>
-      Number(data.total_income || 0),
-    );
-
-    const expenses = history.map((data) =>
-      Number(data.total_expenses || 0),
-    );
-
-    renderCashflowChart(labels, incomes, expenses);
+    cashflowHistoryCache = history;
+    renderCashflowChartFromCache();
 
   } catch (error) {
     console.error("Cashflow history error:", error);
 
     if (dashboardData) {
-      renderCashflowChart(
-        [getMonthLabel(dashboardData.month || selectedMonth)],
-        [Number(dashboardData.total_income || 0)],
-        [Number(dashboardData.total_expenses || 0)],
-      );
+      cashflowHistoryCache = [dashboardData];
+      renderCashflowChartFromCache();
     }
   }
 }
@@ -922,12 +1082,6 @@ function initializeNotifications() {
   getElement("notificationModal")?.addEventListener("click", (event) => {
     if (event.target === getElement("notificationModal")) getElement("notificationModal").hidden = true;
   });
-  getElement("deleteAllNotifications")?.addEventListener("click", () => {
-    notifications = [];
-    saveNotifications();
-    renderNotifications();
-    updateNotificationCount();
-  });
   getElement("selectAllNotifications")?.addEventListener("change", (event) => {
     document.querySelectorAll("#notificationList input[data-notification-id]").forEach((input) => {
       input.checked = event.target.checked;
@@ -967,25 +1121,49 @@ function initializeProfileButton() {
 }
 
 /* =========================================
-   Chart Period Dropdown
+   Chart Controls (Period & View Modes)
 ========================================= */
 
-function initializeChartPeriod() {
+function initializeChartControls() {
   const periodSelect = getElement("chartPeriod");
 
-  if (!periodSelect) return;
+  if (periodSelect) {
+    periodSelect.value = String(selectedChartPeriod);
 
-  periodSelect.value = String(selectedChartPeriod);
+    periodSelect.addEventListener("change", () => {
+      const period = Number(periodSelect.value);
 
-  periodSelect.addEventListener("change", () => {
-    const period = Number(periodSelect.value);
+      if (![6, 12].includes(period)) {
+        return;
+      }
 
-    if (![6, 12].includes(period)) {
-      return;
-    }
+      void loadCashflowHistory(period);
+    });
+  }
 
-    void loadCashflowHistory(period);
-  });
+  const cashflowViewSelect = getElement("cashflowViewMode");
+
+  if (cashflowViewSelect) {
+    cashflowViewSelect.value = selectedCashflowView;
+
+    cashflowViewSelect.addEventListener("change", () => {
+      selectedCashflowView = cashflowViewSelect.value;
+      renderCashflowChartFromCache();
+    });
+  }
+
+  const pieViewSelect = getElement("pieViewMode");
+
+  if (pieViewSelect) {
+    pieViewSelect.value = selectedPieView;
+
+    pieViewSelect.addEventListener("change", () => {
+      selectedPieView = pieViewSelect.value;
+      if (dashboardData) {
+        renderSpendingChart(dashboardData);
+      }
+    });
+  }
 }
 
 /* =========================================
@@ -1115,7 +1293,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeMobileMenu();
   initializeNotifications();
   initializeProfileButton();
-  initializeChartPeriod();
+  initializeChartControls();
   initializeAskAI();
 
   void loadDashboard(selectedMonth);

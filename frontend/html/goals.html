@@ -103,6 +103,34 @@
     </div>
   </div>
 
+  <!-- Delete Goal Confirmation Modal -->
+  <div class="modal confirm-modal" id="deleteGoalModal" role="dialog" aria-modal="true" aria-labelledby="deleteGoalTitle" aria-describedby="deleteGoalMessage">
+    <div class="modal-card confirm-card">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <h2 id="deleteGoalTitle">Delete financial goal?</h2>
+      <p id="deleteGoalMessage"></p>
+      <div class="confirm-goal-details" id="deleteGoalDetails"></div>
+      <div class="confirm-actions">
+        <button class="secondary" id="cancelDeleteGoal" type="button">No, keep it</button>
+        <button class="danger confirm-delete" id="confirmDeleteGoal" type="button">Yes, delete goal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Popup Alert & Issue Message -->
+  <div class="top-popup" id="topPopup" role="alert" aria-live="assertive" hidden>
+    <div class="top-popup-content">
+      <div class="top-popup-icon" id="topPopupIcon">⚠️</div>
+      <div class="top-popup-body">
+        <div class="top-popup-title" id="topPopupTitle"></div>
+        <div class="top-popup-message" id="topPopupMessage"></div>
+        <div class="top-popup-meta" id="topPopupMeta" hidden></div>
+      </div>
+      <button class="top-popup-close" id="topPopupClose" type="button" aria-label="Dismiss message">×</button>
+    </div>
+    <div class="top-popup-progress"><div class="top-popup-progress-bar" id="topPopupProgressBar"></div></div>
+  </div>
+
   <!-- Toast Notification System -->
   <div class="toast" id="toast"></div>
 

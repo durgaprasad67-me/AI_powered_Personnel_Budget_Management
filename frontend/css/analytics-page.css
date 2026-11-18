@@ -1,3 +1,841 @@
-.chart-card { min-height: 360px; }
-.chart-card h2 { margin-top: 0; }
-.chart-card canvas { max-height: 290px; }
+/* ==========================================================================
+   FinSight AI - Analytics Page Stylesheet
+   Faithfully using the Overview Page (Dashboard) Color Palette & Design Tokens
+   ========================================================================== */
+
+:root {
+  /* Overview Theme Colors */
+  --navy: #111c2a;
+  --navy2: #1b2b3c;
+  --ink: #17202d;
+  --muted: #7f8b96;
+  --bg: #edf2f1;
+  --line: #e0e7e6;
+  --white: #ffffff;
+
+  /* Overview Signature Accents */
+  --green: #8fc8b5;
+  --green-bg: #eaf5f1;
+  --green-text: #3b7362;
+  --green-border: #cde4dc;
+
+  --coral: #ffb5ae;
+  --coral-bg: #fff0ee;
+  --coral-text: #b85b54;
+  --coral-border: #ffd5d1;
+
+  --blue: #bfd6f2;
+  --blue-bg: #edf4fc;
+  --blue-text: #4872a4;
+  --blue-border: #d5e5f7;
+
+  --lav: #b8a6f4;
+  --lav-bg: #f3f0fd;
+  --lav-text: #6b57b5;
+  --lav-border: #ded7fa;
+
+  --gold: #f4d59c;
+  --gold-bg: #fdf8ee;
+  --gold-text: #96702e;
+  --gold-border: #f8e5c2;
+
+  --sage: #9eafab;
+  --orchid: #e5b5d1;
+  --pale: #f7f9f8;
+
+  /* Overview Card & Elevation */
+  --card-bg: #ffffff;
+  --card-border: #e3e9f1;
+  --card-shadow: 0 7px 24px rgba(25, 40, 70, 0.055);
+  --card-shadow-hover: 0 12px 30px rgba(25, 40, 70, 0.09);
+  --card-radius: 17px;
+
+  /* Typography */
+  --font-heading: "Manrope", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+}
+
+/* =========================================
+   Period Picker & Navigation Header
+========================================= */
+.period-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--white);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(17, 28, 42, 0.035);
+}
+
+.month-nav-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.month-nav-btn:hover {
+  background: #f1f5f4;
+  color: var(--navy);
+}
+
+.month-nav-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.month-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.calendar-icon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.month-picker-input {
+  border: 0 !important;
+  background: transparent !important;
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  color: var(--ink) !important;
+  padding: 6px 10px 6px 32px !important;
+  cursor: pointer;
+}
+
+.month-picker-input:focus {
+  outline: none;
+}
+
+/* =========================================
+   Executive Financial KPI Stat Cards (Overview Style)
+========================================= */
+.analytics-stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.analytics-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Overview color top bars */
+.analytics-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.analytics-stat-card.inflow::before {
+  background: var(--green);
+}
+
+.analytics-stat-card.outflow::before {
+  background: var(--coral);
+}
+
+.analytics-stat-card.net-positive::before {
+  background: var(--green);
+}
+
+.analytics-stat-card.net-negative::before {
+  background: var(--coral);
+}
+
+.analytics-stat-card.balance::before {
+  background: var(--blue);
+}
+
+.analytics-stat-card.invest::before {
+  background: var(--lav);
+}
+
+.analytics-stat-card.loan::before {
+  background: var(--gold);
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stat-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  transition: transform 0.2s ease;
+}
+
+.analytics-stat-card:hover .stat-icon-wrap {
+  transform: scale(1.05);
+}
+
+.stat-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* KPI Icons & Color Modifiers matching Overview dashboard */
+.stat-icon-wrap.inflow,
+.stat-icon-wrap.net-positive {
+  background: var(--green-bg);
+  color: var(--green-text);
+}
+
+.stat-icon-wrap.outflow,
+.stat-icon-wrap.net-negative {
+  background: var(--coral-bg);
+  color: var(--coral-text);
+}
+
+.stat-icon-wrap.balance {
+  background: var(--blue-bg);
+  color: var(--blue-text);
+}
+
+.stat-icon-wrap.invest {
+  background: var(--lav-bg);
+  color: var(--lav-text);
+}
+
+.stat-icon-wrap.loan {
+  background: var(--gold-bg);
+  color: var(--gold-text);
+}
+
+.stat-value {
+  margin: 12px 0 6px;
+  font-family: var(--font-heading);
+  font-size: clamp(21px, 2vw, 27px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1d2a3d;
+  line-height: 1.15;
+  font-feature-settings: "tnum" 1;
+}
+
+.stat-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.stat-badge-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2.5px 8.5px;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stat-subtext {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================
+   Chart Cards & Containers
+========================================= */
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 22px;
+  min-height: 470px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.chart-card .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chart-card .card-header h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 800;
+  color: #1d2a3d;
+  letter-spacing: -0.015em;
+}
+
+.card-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+/* Pill Badges with Overview Color Tokens */
+.pill-amount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+}
+
+.pill-amount-badge.inflow {
+  background: var(--green-bg);
+  color: var(--green-text);
+  border: 1px solid var(--green-border);
+}
+
+.pill-amount-badge.outflow {
+  background: var(--coral-bg);
+  color: var(--coral-text);
+  border: 1px solid var(--coral-border);
+}
+
+.chart-container {
+  position: relative;
+  height: 235px;
+  width: 100%;
+  margin: 4px 0 16px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* =========================================
+   Category Breakdown List with Overview Palette
+========================================= */
+.category-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  max-height: 175px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Custom Sleek Scrollbar */
+.category-breakdown-list::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.category-breakdown-list::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-breakdown-list::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd6d3;
+  border-radius: 99px;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 11px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.category-row:hover {
+  background: #f1f5f4;
+  border-color: var(--line);
+  transform: translateX(2px);
+}
+
+.category-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.category-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.category-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-bar-track {
+  width: 100%;
+  height: 4px;
+  background: #e7ecec;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.category-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.category-amount {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+}
+
+.category-pct {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #56636d;
+  min-width: 42px;
+  text-align: right;
+  background: #e9efee;
+  padding: 2.5px 6px;
+  border-radius: 6px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 175px;
+  padding: 20px;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd6d3;
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.empty-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eaf0ee;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  color: #4f746b;
+}
+
+.empty-state div {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.empty-state p {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* =========================================
+   Types & Categories Explorer Table Card
+========================================= */
+.explorer-card {
+  margin-top: 10px;
+  padding: 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.explorer-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.explorer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.explorer-header h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 800;
+  color: #1d2a3d;
+  letter-spacing: -0.02em;
+}
+
+/* Segmented Control Filter Pills */
+.filter-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #eaf0ee;
+  padding: 4px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+}
+
+.filter-pill {
+  padding: 6px 15px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: #61736e;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  color: var(--navy);
+}
+
+.filter-pill.active {
+  background: var(--navy);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(17, 28, 42, 0.16);
+}
+
+/* Explorer Table Styling */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.analytics-table th {
+  background: #f8faf9;
+  color: #7b8798;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.analytics-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f4f3;
+  vertical-align: middle;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--white);
+  transition: background 0.12s ease;
+}
+
+.analytics-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.analytics-table tr:hover td {
+  background: #f8faf9;
+}
+
+/* Stream Pill with Pulsing Dot Indicator */
+.stream-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3.5px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.stream-pill .dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stream-pill.inflow {
+  background: var(--green-bg);
+  color: var(--green-text);
+  border: 1px solid var(--green-border);
+}
+
+.stream-pill.inflow .dot {
+  background: var(--green);
+  box-shadow: 0 0 0 2px rgba(143, 200, 181, 0.35);
+}
+
+.stream-pill.outflow {
+  background: var(--coral-bg);
+  color: var(--coral-text);
+  border: 1px solid var(--coral-border);
+}
+
+.stream-pill.outflow .dot {
+  background: var(--coral);
+  box-shadow: 0 0 0 2px rgba(255, 181, 174, 0.4);
+}
+
+/* Type Pill Cell */
+.type-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.type-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.type-icon-box svg {
+  width: 16px;
+  height: 16px;
+}
+
+.type-details-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.type-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  color: #1d2a3d;
+}
+
+.type-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* Table Amount & Count */
+.amount-cell {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.015em;
+  color: #1d2a3d;
+  font-feature-settings: "tnum" 1;
+}
+
+.count-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f1f5f4;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 11px;
+  color: #56636d;
+}
+
+/* Share of Stream Progress Bar */
+.share-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 110px;
+}
+
+.share-bar-track {
+  flex: 1 1 auto;
+  height: 5px;
+  background: #e7ecec;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.share-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.share-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #56636d;
+  min-width: 42px;
+  text-align: right;
+}
+
+/* Dynamic Category Tags */
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 500px;
+}
+
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3.5px 9px;
+  border-radius: 7px;
+  background: #f8faf9;
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  color: #435460;
+  transition: all 0.15s ease;
+}
+
+.category-tag:hover {
+  background: #eaf0ee;
+  border-color: #cbd6d3;
+}
+
+.category-tag strong {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #1d2a3d;
+  letter-spacing: -0.01em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-3,
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chart-card {
+    min-height: auto;
+  }
+
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .period-picker-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

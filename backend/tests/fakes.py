@@ -307,7 +307,12 @@ class FakeBudgetRepository:
                 if not (start_date <= tx_date <= end_date):
                     continue
                 tx_type = tx.get("transaction_type")
-                if transaction_type != "all" and tx_type != transaction_type:
+                if transaction_type == "all":
+                    from app.domain.transaction_types import CASH_OUT_TYPES
+
+                    if tx_type not in CASH_OUT_TYPES:
+                        continue
+                elif tx_type != transaction_type:
                     continue
                 tx_cat = tx.get("category")
                 if cat_vals and (not tx_cat or tx_cat not in cat_vals):
@@ -333,6 +338,20 @@ class FakeBudgetRepository:
         month_start = Date(dt.year, dt.month, 1).isoformat()
         month_end = period_end(Date(dt.year, dt.month, 1), "monthly").isoformat()
         month_name = dt.strftime("%B %Y")
+
+        from app.domain.transaction_types import CASH_IN_TYPES
+
+        if transaction_type in CASH_IN_TYPES:
+            settings = get_settings()
+            return {
+                "has_budget": False,
+                "month": month_name,
+                "allocated_budget": None,
+                "spent_amount": 0.0,
+                "remaining_budget": None,
+                "max_allowed": settings.max_inflow_amount,
+                "warning": None,
+            }
 
         matching_budgets = []
         for b in self.documents.values():

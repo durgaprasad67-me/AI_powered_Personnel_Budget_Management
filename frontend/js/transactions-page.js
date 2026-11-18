@@ -21,11 +21,11 @@ const CATEGORIES_BY_TYPE = {
   income: ["salary", "freelance", "interest", "refund"],
   expense: ["food", "groceries", "transport", "bills", "rent", "shopping", "entertainment", "health", "education", "home", "utilities"],
   investment: ["investment"],
-  investment_return: ["investment return", "investment"],
+  investment_return: ["investment"],
   loan_taken: ["loan"],
   loan_repaid: ["loan"],
   loan_given: ["loan"],
-  loan_collected: ["loan return", "loan"],
+  loan_collected: ["loan"],
 };
 let transactionToDelete = null;
 let deleteModalPreviousFocus = null;
@@ -128,17 +128,24 @@ async function fetchDynamicBudgetLimit() {
           type: "warning",
         });
       }
-    } else if (data.warning && !data.has_budget) {
-      FinSight.showTopPopup({
-        title: "No Budget Set",
-        message: `${data.warning} Transactions for this month will be recorded without a spending limit.`,
-        meta: [
-          { label: "Month", value: data.month },
-          { label: "Status", value: "Unrestricted" },
-        ],
-        type: "info",
-        duration: 7000,
-      });
+    } else {
+      const errorEl = tx$("transactionAmountError");
+      if (errorEl && errorEl.textContent.includes("remaining budget")) {
+        errorEl.textContent = "";
+        amountInput.classList.remove("has-error");
+      }
+      if (data.warning && !data.has_budget) {
+        FinSight.showTopPopup({
+          title: "No Budget Set",
+          message: `${data.warning} Transactions for this month will be recorded without a spending limit.`,
+          meta: [
+            { label: "Month", value: data.month },
+            { label: "Status", value: "Unrestricted" },
+          ],
+          type: "info",
+          duration: 7000,
+        });
+      }
     }
   } catch (err) {
     currentLimitData = null;
@@ -442,7 +449,36 @@ const customCategoryInput = tx$("transactionOtherCategory");
 if (customCategoryInput) {
   customCategoryInput.addEventListener("input", () => void fetchDynamicBudgetLimit());
 }
-tx$("transactionDate").addEventListener("change", () => void fetchDynamicBudgetLimit());
+function validateTransactionDateInput() {
+  const val = tx$("transactionDate").value.trim();
+  const todayStr = today();
+  if (val && val > todayStr) {
+    setFieldError("date", "Transaction date cannot be in the future.");
+    FinSight.showTopPopup({
+      title: "Future Date Not Permitted",
+      message: `The selected date (${val}) is in the future. Financial transactions must be recorded on or before today (${todayStr}).`,
+      meta: [
+        { label: "Selected Date", value: val, highlight: true },
+        { label: "Today (IST)", value: todayStr },
+      ],
+      type: "error",
+      duration: 8000,
+    });
+    return false;
+  }
+  const errorEl = tx$("transactionDateError");
+  if (errorEl) errorEl.textContent = "";
+  tx$("transactionDate").classList.remove("has-error");
+  return true;
+}
+
+tx$("transactionDate").addEventListener("change", () => {
+  validateTransactionDateInput();
+  void fetchDynamicBudgetLimit();
+});
+tx$("transactionDate").addEventListener("input", () => {
+  validateTransactionDateInput();
+});
 tx$("transactionAmount").addEventListener("input", () => {
   const raw = tx$("transactionAmount").value.trim();
   const val = Number(raw);

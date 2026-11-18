@@ -240,6 +240,44 @@ def test_v5_monthly_budget_rule_and_boundary(client, overrides):
     assert no_budget_res.status_code == 201
     assert "no budget set" in str(no_budget_res.json().get("warning", "")).lower()
 
+    # 5. Inflow rule: Cash inflows (income, loan_taken, loan_collected, investment_return)
+    # never follow budget rules and are never blocked, even when budget is full.
+    inflows = [
+        {"transaction_type": "income", "category": "salary", "amount": 80000.0},
+        {"transaction_type": "loan_taken", "category": "loan", "amount": 25000.0},
+        {"transaction_type": "loan_collected", "category": "loan", "amount": 15000.0},
+        {"transaction_type": "investment_return", "category": "investment", "amount": 30000.0},
+    ]
+    for inf in inflows:
+        res = client.post("/api/v1/transactions", json={
+            "amount": inf["amount"],
+            "transaction_type": inf["transaction_type"],
+            "category": inf["category"],
+            "date": "2026-11-10",
+        })
+        assert res.status_code == 201, f"Failed for {inf['transaction_type']}: {res.text}"
+        assert res.json().get("warning") is None
+
+    # 6. Cash outflows (investment, loan_repaid, loan_given, expense) follow budget rules.
+    # When budget limit for food (450 spent of 500 = 50 remaining) is tested with 50.00:
+    outflow_pass = client.post("/api/v1/transactions", json={
+        "amount": 50.00,
+        "transaction_type": "expense",
+        "category": "food",
+        "date": "2026-11-12",
+    })
+    assert outflow_pass.status_code == 201
+
+    # Over budget now (500 spent of 500)
+    outflow_fail = client.post("/api/v1/transactions", json={
+        "amount": 1.00,
+        "transaction_type": "expense",
+        "category": "food",
+        "date": "2026-11-15",
+    })
+    assert outflow_fail.status_code == 422
+    assert "Remaining budget" in str(outflow_fail.json())
+
 
 def test_v6_date_validation_future_and_floor(client, overrides):
     """V6: not in the future, not older than floor."""
