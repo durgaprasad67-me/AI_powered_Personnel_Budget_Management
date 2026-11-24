@@ -88,6 +88,7 @@ ChatIntent = Literal[
     "greeting",
     "help",
     "spending_analysis",
+    "security_warning",
 ]
 
 

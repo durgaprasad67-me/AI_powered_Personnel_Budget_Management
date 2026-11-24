@@ -73,6 +73,27 @@ class TransactionRepository:
         document["user_id"] = user_id
         document["vector_index_status"] = "pending"
         document.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+
+        # Ensure fingerprint is computed and stored on every transaction (imports and Add Transaction)
+        if "fingerprint" not in document:
+            from app.services.importing.deduplication import (
+                compute_row_fingerprint,
+                compute_row_fingerprint_base,
+            )
+            base_key = compute_row_fingerprint_base(
+                user_id=user_id,
+                date_str=str(document.get("date", "")),
+                description=str(document.get("description", "")),
+                amount=float(document.get("amount", 0.0)),
+                tx_type=str(document.get("transaction_type", "expense")),
+            )
+            count = await self.collection.count_documents(
+                {"user_id": user_id, "fingerprint_base": base_key}
+            )
+            document["fingerprint_base"] = base_key
+            document["occurrence"] = count + 1
+            document["fingerprint"] = compute_row_fingerprint(base_key, count + 1)
+
         new_id = await insert_with_next_id(self.collection, document)
         saved = await self.collection.find_one({"_id": new_id})
         return serialize_transaction(saved) if saved is not None else None
@@ -110,13 +131,15 @@ class TransactionRepository:
         limit: int,
         skip: int,
         sort_descending: bool = True,
+        sort_by: list[tuple[str, int]] | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
         query = _scoped_filter(filters, user_id)
         total = await self.collection.count_documents(query)
         direction = -1 if sort_descending else 1
+        sort_clause = sort_by if sort_by is not None else [("date", direction), ("_id", direction)]
         cursor = (
             self.collection.find(query)
-            .sort([("date", direction), ("_id", direction)])
+            .sort(sort_clause)
             .skip(skip)
             .limit(limit)
         )

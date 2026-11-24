@@ -10,6 +10,7 @@ from app.api.deps import (
     get_goal_service,
     get_transaction_service,
 )
+from app.domain.transaction_types import CASH_OUT_TYPES
 from app.repositories.budgets import budget_category_values, period_end
 from app.schemas.analytics import DashboardResponse, MonthlyAnalyticsSummary
 from app.services.analytics import AnalyticsService
@@ -59,11 +60,16 @@ def _budget_covers(parent: dict, child: dict) -> bool:
 
 
 def _transaction_matches_budget(transaction: dict, budget: dict) -> bool:
+    tx_type = transaction.get("transaction_type")
+    # Cash inflows never follow or count towards budget rules
+    if tx_type not in CASH_OUT_TYPES:
+        return False
     budget_type = budget.get("transaction_type", "expense")
-    if budget_type != "all" and transaction.get("transaction_type") != budget_type:
+    if budget_type != "all" and tx_type != budget_type:
         return False
     categories = budget_category_values(budget.get("category"))
-    return not categories or transaction.get("category") in categories
+    tx_cat = (transaction.get("category") or "").strip().lower()
+    return not categories or tx_cat in categories
 
 
 def _active_budget_roots(

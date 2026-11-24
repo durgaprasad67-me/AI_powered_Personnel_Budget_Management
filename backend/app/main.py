@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 from math import ceil
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.router import api_router
@@ -109,3 +111,37 @@ async def home():
 
 app.include_router(health_router)
 app.include_router(api_router)
+
+# Mount frontend static directories (assets, css, js) - HTML directory is NEVER mounted publicly
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
+STATIC_ASSETS_DIR = FRONTEND_DIR / "assets"
+STATIC_CSS_DIR = FRONTEND_DIR / "css"
+STATIC_JS_DIR = FRONTEND_DIR / "js"
+HTML_DIR = FRONTEND_DIR / "html"
+
+if STATIC_ASSETS_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+    app.mount("/frontend/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="frontend_assets")
+if STATIC_CSS_DIR.exists():
+    app.mount("/css", StaticFiles(directory=STATIC_CSS_DIR), name="css")
+    app.mount("/frontend/css", StaticFiles(directory=STATIC_CSS_DIR), name="frontend_css")
+if STATIC_JS_DIR.exists():
+    app.mount("/js", StaticFiles(directory=STATIC_JS_DIR), name="js")
+    app.mount("/frontend/js", StaticFiles(directory=STATIC_JS_DIR), name="frontend_js")
+
+
+# Public Auth UI Page Routes
+@app.get("/login", include_in_schema=False)
+async def login_page():
+    return FileResponse(HTML_DIR / "login.html")
+
+
+@app.get("/register", include_in_schema=False)
+async def register_page():
+    return FileResponse(HTML_DIR / "register.html")
+
+
+@app.get("/forgot-password", include_in_schema=False)
+async def forgot_password_page():
+    return FileResponse(HTML_DIR / "forgot-password.html")
+

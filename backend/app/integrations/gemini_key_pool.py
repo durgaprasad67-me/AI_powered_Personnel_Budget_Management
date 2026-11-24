@@ -180,12 +180,17 @@ def classify(exc: BaseException) -> str:
 
     if (
         "429" in status_text
+        or "502" in status_text
         or "503" in status_text
-        or re.search(r"\b(?:429|503)\b", text)
+        or "504" in status_text
+        or re.search(r"\b(?:429|502|503|504)\b", text)
         or "RESOURCE_EXHAUSTED" in text
         or "RATE LIMIT" in text
         or "TOO MANY REQUESTS" in text
         or "QUOTA EXCEEDED" in text
+        or "DEADLINE_EXCEEDED" in text
+        or "DEADLINE EXCEEDED" in text
+        or "GATEWAY TIMEOUT" in text
     ):
         return "rate_limit"
 

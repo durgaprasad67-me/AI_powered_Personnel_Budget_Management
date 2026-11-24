@@ -74,6 +74,17 @@ def test_transaction_service_create_list_filters_get_update_replace_delete():
         )
     )
     assert listed["total"] == 1
+
+    # Verify search filters by type, date, amount, description, category
+    assert run(service.list(limit=10, skip=0, search="income"))["total"] == 1
+    assert run(service.list(limit=10, skip=0, search="expense"))["total"] == 1
+    assert run(service.list(limit=10, skip=0, search="2026-10"))["total"] == 2
+    assert run(service.list(limit=10, skip=0, search="1000"))["total"] == 1
+    assert run(service.list(limit=10, skip=0, search="100"))["total"] == 1
+    assert run(service.list(limit=10, skip=0, search="Lunch"))["total"] == 2
+    assert run(service.list(limit=10, skip=0, search="salary"))["total"] == 1
+    assert run(service.list(limit=10, skip=0, search="food"))["total"] == 1
+
     assert run(service.get(2))["id"] == 2
 
     updated = run(

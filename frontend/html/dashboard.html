@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,19 @@
 
   <title>FinSight AI | Finance Overview</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../assets/icons/dashboard_icon.png">
+  <link rel="apple-touch-icon" href="../assets/icons/dashboard_icon.png">
+
 
   <!-- External Resources & Libraries             -->
 
-  
+
   <!-- Typography: DM Sans for body text, Manrope for bold headings -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- Charting Library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -25,7 +32,7 @@
   <link rel="stylesheet" href="../css/dashboard.css?v=2">
 </head>
 
-<body>
+<body data-page="Overview">
 
 
   <!-- SIDEBAR NAVIGATION                         -->
@@ -33,7 +40,7 @@
   <aside class="sidebar" id="sidebar">
 
     <!-- Brand Logo & Tagline -->
-    <a class="brand" href="#overview">
+    <a class="brand" href="dashboard.html">
       <span class="brand-icon">
         <i data-lucide="chart-no-axes-combined"></i>
       </span>
@@ -47,25 +54,25 @@
 
     <!-- Main Navigation Links -->
     <nav class="nav">
-      <a class="active" href="#overview" data-page="Overview">
+      <a class="active" href="dashboard.html" data-page="Overview">
         <i data-lucide="layout-dashboard"></i> Overview
       </a>
-      <a href="#transactions" data-page="Transactions">
+      <a href="transactions.html" data-page="Transactions">
         <i data-lucide="arrow-left-right"></i> Transactions
       </a>
-      <a href="#budgets" data-page="Budgets">
+      <a href="budgets.html" data-page="Budgets">
         <i data-lucide="wallet"></i> Budgets
       </a>
-      <a href="#goals" data-page="Financial Goals">
+      <a href="goals.html" data-page="Financial goals">
         <i data-lucide="target"></i> Financial goals
       </a>
-      <a href="#insights" data-page="AI Insights">
+      <a href="insights.html" data-page="AI insights">
         <i data-lucide="sparkles"></i> AI insights
       </a>
-      <a href="#analytics" data-page="Analytics">
+      <a href="analytics.html" data-page="Analytics">
         <i data-lucide="chart-column-increasing"></i> Analytics
       </a>
-      <a href="#reports" data-page="Reports">
+      <a href="reports.html" data-page="Reports">
         <i data-lucide="file-chart-column"></i> Reports
       </a>
       <a href="imports.html" data-page="Import data">
@@ -125,8 +132,8 @@
           <span class="notification-count" id="notificationCount" hidden>0</span>
         </button>
 
-        <button class="profile-btn" id="profileBtn">
-          <span class="avatar" data-user-initial>P</span>
+        <button class="profile-btn" id="profileBtn" type="button" aria-label="User profile">
+          <span class="avatar" data-user-initial>D</span>
           <span data-user-name>Personal account</span>
           <i data-lucide="chevron-down"></i>
         </button>
@@ -158,8 +165,9 @@
           <div class="hero-total" id="available">
             <span id="availableValue">—</span> <small>this month</small>
           </div>
-          <div class="hero-caption">Cash inflows less expenses, investments, and loan repayments for the selected month</div>
-          
+          <div class="hero-caption">Cash inflows less expenses, investments, and loan repayments for the selected month
+          </div>
+
           <!-- Visual Progress Bar -->
           <div class="hero-progress">
             <span></span>
@@ -182,7 +190,8 @@
           </div>
           <div class="hero-side-value" id="savingRate">—</div>
           <div class="hero-side-copy">
-            You’re keeping a portion of your income available for future plans. Keep building a routine that works for you.
+            You’re keeping a portion of your income available for future plans. Keep building a routine that works for
+            you.
           </div>
         </div>
       </section>
@@ -229,15 +238,6 @@
           </div>
         </article>
 
-        <article class="kpi">
-          <div class="kpi-head">
-            Investments <span class="kpi-icon blue"><i data-lucide="chart-no-axes-combined"></i></span>
-          </div>
-          <div class="kpi-value" id="investmentValue">—</div>
-          <div class="kpi-foot">
-            <strong>Live</strong> <span>selected month</span>
-          </div>
-        </article>
 
         <article class="kpi">
           <div class="kpi-head">
@@ -252,13 +252,14 @@
 
       <!-- Analytics Charts Section -->
       <section class="charts-grid" id="analytics">
-        
+
         <!-- Cashflow Chart -->
         <article class="card">
           <div class="card-header">
             <div>
               <h2 class="card-title" id="cashflowChartTitle">Cash flow &amp; activity by type</h2>
-              <div class="card-subtitle" id="cashflowChartSubtitle">Track all inflows, outflows, investments &amp; loans over time</div>
+              <div class="card-subtitle" id="cashflowChartSubtitle">Track all inflows, outflows, investments &amp; loans
+                over time</div>
             </div>
             <div class="chart-header-actions">
               <select class="select" id="cashflowViewMode" aria-label="Cash flow chart view mode">
@@ -310,7 +311,7 @@
 
       <!-- Actionable Data: Transactions, Budgets, and Goals -->
       <section class="lower-grid">
-        
+
         <!-- Recent Transactions List -->
         <article class="card" id="transactions">
           <div class="card-header">
@@ -358,11 +359,18 @@
     </div>
   </main>
 
-  <div class="notification-modal" id="notificationModal" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" hidden>
+  <div class="notification-modal" id="notificationModal" role="dialog" aria-modal="true"
+    aria-labelledby="notificationTitle" hidden>
     <div class="notification-card">
       <div class="notification-head">
-        <div><div class="eyebrow">Budget alerts</div><h2 id="notificationTitle">Notifications</h2></div>
-        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button><button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button></div>
+        <div>
+          <div class="eyebrow">Budget alerts</div>
+          <h2 id="notificationTitle">Notifications</h2>
+        </div>
+        <div class="notification-actions"><label class="select-all-notifications"><input id="selectAllNotifications"
+              type="checkbox"> Select all</label><button class="secondary" id="deleteSelectedNotifications"
+            type="button">Delete selected</button><button class="close" id="closeNotifications" type="button"
+            aria-label="Close notifications">×</button></div>
       </div>
       <div class="notification-list" id="notificationList"></div>
     </div>
@@ -375,4 +383,5 @@
   <script src="../js/dashboard.js?v=3" defer></script>
 
 </body>
+
 </html>

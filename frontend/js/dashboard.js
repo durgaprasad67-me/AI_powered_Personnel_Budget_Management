@@ -163,6 +163,15 @@ function showToast(message) {
     return;
   }
 
+  if (!toast._hasDismissListener) {
+    toast._hasDismissListener = true;
+    toast.style.cursor = "pointer";
+    toast.addEventListener("click", () => {
+      toast.classList.remove("show", "error");
+      clearTimeout(toastTimeout);
+    });
+  }
+
   toast.textContent = message;
   toast.classList.add("error");
   toast.setAttribute("role", "alert");
@@ -700,6 +709,8 @@ function renderTransactions(transactions) {
   });
 }
 
+const DASHBOARD_CASH_OUTFLOW_TYPES = new Set(["expense", "investment", "loan_repaid", "loan_given"]);
+
 function renderBudgets(budgets, categoryBreakdown, transactions = []) {
   const list = getElement("budgetList");
 
@@ -723,12 +734,12 @@ function renderBudgets(budgets, categoryBreakdown, transactions = []) {
     const fill = document.createElement("span");
     const spent = transactions
       .filter((transaction) => {
+        if (!DASHBOARD_CASH_OUTFLOW_TYPES.has(transaction.transaction_type)) {
+          return false;
+        }
         const category = String(transaction.category || "").toLowerCase();
         const budgetCategory = String(budget.category || "").toLowerCase();
-        const categoryMatches = !budgetCategory
-          || category === budgetCategory
-          || (budgetCategory === "investment return" && category === "investment")
-          || (budgetCategory === "loan return" && category === "loan");
+        const categoryMatches = !budgetCategory || category === budgetCategory;
         const typeMatches = !budget.transaction_type
           || budget.transaction_type === "all"
           || transaction.transaction_type === budget.transaction_type;
@@ -743,7 +754,9 @@ function renderBudgets(budgets, categoryBreakdown, transactions = []) {
     item.className = "budget-item";
     top.className = "budget-top";
     name.className = "budget-name";
-    name.textContent = budget.category || "All categories";
+    name.textContent = budget.category
+      ? String(budget.category).replace(/\b\w/g, (c) => c.toUpperCase())
+      : (budget.transaction_type === "all" ? "All cash outflows" : "All categories");
     budgetAmount.className = "budget-amount";
     budgetAmount.textContent =
       `${amount(spent)} spent of ${amount(limit)}`;
@@ -976,7 +989,9 @@ function navigateToPage(page) {
     Transactions: "transactions.html",
     Budgets: "budgets.html",
     "AI Insights": "insights.html",
+    "AI insights": "insights.html",
     "Financial Goals": "goals.html",
+    "Financial goals": "goals.html",
     Analytics: "analytics.html",
     Reports: "reports.html",
     "Import data": "imports.html",
@@ -1167,20 +1182,6 @@ function initializeChartControls() {
 }
 
 /* =========================================
-   Ask FinSight AI
-========================================= */
-
-function initializeAskAI() {
-  const askButton = getElement("askAI");
-
-  if (!askButton) return;
-
-  askButton.addEventListener("click", () => {
-    window.location.href = `chat.html?month=${encodeURIComponent(selectedMonth)}`;
-  });
-}
-
-/* =========================================
    CSV Report Export
 ========================================= */
 
@@ -1294,7 +1295,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeNotifications();
   initializeProfileButton();
   initializeChartControls();
-  initializeAskAI();
 
   void loadDashboard(selectedMonth);
 });

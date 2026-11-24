@@ -30,6 +30,8 @@ const CATEGORIES_BY_TYPE = {
 let transactionToDelete = null;
 let deleteModalPreviousFocus = null;
 let currentLimitData = null;
+let activePeriodMode = "month";
+let exactAmountOnly = false;
 
 function clearFieldErrors() {
   ["transactionDate", "transactionType", "transactionAmount", "transactionCategory", "transactionDescription"].forEach((field) => {
@@ -74,12 +76,32 @@ function setFieldError(field, message) {
   if (inputEl) inputEl.classList.add("has-error");
 }
 
+const CASH_INFLOW_TYPES = new Set(["income", "investment_return", "loan_taken", "loan_collected"]);
+
 async function fetchDynamicBudgetLimit() {
   const type = tx$("transactionType").value;
   const category = selectedCategory();
   const date = tx$("transactionDate").value || today();
   const id = tx$("transactionId").value;
   const amountInput = tx$("transactionAmount");
+
+  if (CASH_INFLOW_TYPES.has(type)) {
+    currentLimitData = {
+      has_budget: false,
+      allocated_budget: null,
+      spent_amount: 0,
+      remaining_budget: null,
+      max_allowed: 10000000,
+      warning: null,
+    };
+    amountInput.max = 10000000;
+    const errorEl = tx$("transactionAmountError");
+    if (errorEl && errorEl.textContent.includes("remaining budget")) {
+      errorEl.textContent = "";
+      amountInput.classList.remove("has-error");
+    }
+    return;
+  }
 
   try {
     const query = new URLSearchParams({
@@ -169,18 +191,119 @@ function selectedTransactions() {
   const search = tx$("search").value.trim().toLowerCase();
   const type = tx$("type").value;
   const category = tx$("category").value;
-  const month = tx$("month").value;
+  const month = tx$("month")?.value || "";
+  const year = tx$("year")?.value || "";
 
-  return transactionItems.filter((item) => {
-    const searchable = `${item.description || ""} ${item.category || ""}`.toLowerCase();
+  // Check if search query is a numeric/currency amount query
+  // (e.g. "100", "12", "10,000", "₹100", "Rs 100", "100.50")
+  const isNumericQuery = /^[₹\s]*(?:rs\.?\s*)?(\d+(?:\.\d+)?)[,\s]*$/i.test(search);
+  const cleanSearchNum = search ? search.replace(/[₹,\s]|rs\.?/gi, "").trim() : "";
+  const searchNumVal = cleanSearchNum ? parseFloat(cleanSearchNum) : NaN;
+
+  // First, filter by dropdown type, category, and month/year period
+  const scopedItems = transactionItems.filter((item) => {
     const categoryMatches = category === "__other__"
       ? (!CATEGORY_OPTIONS.includes(item.category) || item.category === "other")
       : (!category || item.category === category);
-    return (!search || searchable.includes(search))
-      && (!type || item.transaction_type === type)
-      && categoryMatches
-      && (!month || String(item.date).startsWith(month));
+
+    let periodMatches = true;
+    if (activePeriodMode === "month") {
+      periodMatches = !month || String(item.date).startsWith(month);
+    } else if (activePeriodMode === "year") {
+      periodMatches = !year || String(item.date).startsWith(year);
+    }
+
+    const typeMatches = !type || item.transaction_type === type;
+    return categoryMatches && periodMatches && typeMatches;
   });
+
+  if (!search) {
+    return scopedItems;
+  }
+
+  // If user searched for a numeric amount
+  if (isNumericQuery && !isNaN(searchNumVal)) {
+    // Check if any candidate has an EXACT amount match
+    const hasExactAmountMatch = scopedItems.some((item) => {
+      const numAmount = Number(item.amount || 0);
+      const cleanAmountStr = String(item.amount ?? "").replace(/\.0+$/, "");
+      return cleanAmountStr === cleanSearchNum || Math.abs(numAmount - searchNumVal) < 0.0001;
+    });
+
+    // If an exact amount match exists OR user explicitly pressed Enter:
+    // require exact amount matching so prefixes like 10000 or 100000 do not crowd out 100
+    const requireExact = hasExactAmountMatch || exactAmountOnly;
+
+    const matched = scopedItems.filter((item) => {
+      const numAmount = Number(item.amount || 0);
+      const cleanAmountStr = String(item.amount ?? "").replace(/\.0+$/, "");
+      const isExact = cleanAmountStr === cleanSearchNum || Math.abs(numAmount - searchNumVal) < 0.0001;
+      if (requireExact) {
+        return isExact;
+      }
+      // While typing (prefix matching e.g. "12" matches "1233", "124", "125", "126")
+      const isPrefix = cleanAmountStr.startsWith(cleanSearchNum);
+      return isExact || isPrefix;
+    });
+
+    // Sort: exact matches first, then closer numbers ascending
+    matched.sort((a, b) => {
+      const numA = Number(a.amount || 0);
+      const numB = Number(b.amount || 0);
+      const cleanA = String(a.amount ?? "").replace(/\.0+$/, "");
+      const cleanB = String(b.amount ?? "").replace(/\.0+$/, "");
+      const exactA = cleanA === cleanSearchNum || Math.abs(numA - searchNumVal) < 0.0001 ? 0 : 1;
+      const exactB = cleanB === cleanSearchNum || Math.abs(numB - searchNumVal) < 0.0001 ? 0 : 1;
+      if (exactA !== exactB) return exactA - exactB;
+      const diffA = Math.abs(numA - searchNumVal);
+      const diffB = Math.abs(numB - searchNumVal);
+      if (diffA !== diffB) return diffA - diffB;
+      return numA - numB;
+    });
+
+    return matched;
+  }
+
+  // Non-numeric search query (description, category, type, date)
+  return scopedItems.filter((item) => {
+    const desc = String(item.description || "").toLowerCase();
+    const cat = String(item.category || "").toLowerCase();
+    const rawType = String(item.transaction_type || "").toLowerCase();
+    const typeLabel = (TRANSACTION_TYPE_LABELS[item.transaction_type] || rawType.replaceAll("_", " ")).toLowerCase();
+    const dateStr = String(item.date || "").toLowerCase();
+
+    const searchableText = `${desc} ${cat} ${rawType} ${typeLabel} ${dateStr}`.toLowerCase();
+    return searchableText.includes(search);
+  });
+}
+
+function setPeriodMode(mode) {
+  activePeriodMode = mode;
+  const currentToday = today();
+  const curMonth = currentToday.slice(0, 7);
+  const curYear = currentToday.slice(0, 4);
+
+  if (mode === "month") {
+    tx$("periodMonthly")?.classList.add("active");
+    tx$("periodYearly")?.classList.remove("active");
+    if (tx$("month")) {
+      tx$("month").style.display = "";
+      if (!tx$("month").value) tx$("month").value = curMonth;
+    }
+    if (tx$("year")) {
+      tx$("year").style.display = "none";
+    }
+  } else {
+    tx$("periodYearly")?.classList.add("active");
+    tx$("periodMonthly")?.classList.remove("active");
+    if (tx$("year")) {
+      tx$("year").style.display = "";
+      if (!tx$("year").value) tx$("year").value = curYear;
+    }
+    if (tx$("month")) {
+      tx$("month").style.display = "none";
+    }
+  }
 }
 
 function renderTransactionStats(items) {
@@ -252,12 +375,13 @@ function updateTransactionCategories(categoryValue = "") {
     option.textContent = value.replace(/\b\w/g, (letter) => letter.toUpperCase());
     select.appendChild(option);
   });
-  const isCustom = selected && !categories.includes(selected);
+  const normSelected = selected ? selected.trim().toLowerCase() : "";
+  const isCustom = normSelected && !categories.includes(normSelected);
   const customOption = document.createElement("option");
   customOption.value = CUSTOM_CATEGORY_VALUE;
   customOption.textContent = "Custom";
   select.appendChild(customOption);
-  select.value = isCustom ? CUSTOM_CATEGORY_VALUE : selected;
+  select.value = isCustom ? CUSTOM_CATEGORY_VALUE : normSelected;
   if (customInput && isCustom) customInput.value = selected;
   updateOtherCategoryInput();
 }
@@ -387,6 +511,7 @@ async function loadTransactions() {
     transactionItems = items;
     renderCategoryOptions();
     renderTransactions();
+    FinSight?.notifications?.checkBudgetAlerts?.();
   } catch (error) {
     tx$("transactionRows").innerHTML = `<tr><td class="empty" colspan="6">${error.message}</td></tr>`;
     FinSight.showTopPopup({
@@ -524,7 +649,19 @@ document.addEventListener("keydown", (event) => {
     closeDeleteConfirmation();
   }
 });
-tx$("search").addEventListener("input", () => { currentPage = 1; renderTransactions(); });
+tx$("search").addEventListener("input", () => {
+  exactAmountOnly = false;
+  currentPage = 1;
+  renderTransactions();
+});
+tx$("search").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    exactAmountOnly = true;
+    currentPage = 1;
+    renderTransactions();
+  }
+});
 tx$("type").addEventListener("change", () => {
   renderCategoryOptions(tx$("type").value);
   currentPage = 1;
@@ -532,11 +669,26 @@ tx$("type").addEventListener("change", () => {
 });
 tx$("category").addEventListener("change", () => { currentPage = 1; renderTransactions(); });
 tx$("month").addEventListener("change", () => { currentPage = 1; renderTransactions(); });
+tx$("periodMonthly")?.addEventListener("click", () => {
+  setPeriodMode("month");
+  currentPage = 1;
+  renderTransactions();
+});
+tx$("periodYearly")?.addEventListener("click", () => {
+  setPeriodMode("year");
+  currentPage = 1;
+  renderTransactions();
+});
+tx$("year")?.addEventListener("input", () => { currentPage = 1; renderTransactions(); });
+tx$("year")?.addEventListener("change", () => { currentPage = 1; renderTransactions(); });
 tx$("clearFilters").addEventListener("click", () => {
+  exactAmountOnly = false;
   tx$("search").value = "";
   tx$("type").value = "";
   renderCategoryOptions();
-  tx$("month").value = "";
+  setPeriodMode("month");
+  if (tx$("month")) tx$("month").value = today().slice(0, 7);
+  if (tx$("year")) tx$("year").value = today().slice(0, 4);
   currentPage = 1;
   renderTransactions();
 });
@@ -748,5 +900,8 @@ tx$("transactionForm").addEventListener("submit", async (event) => {
   }
 });
 
+setPeriodMode("month");
+if (tx$("month")) tx$("month").value = today().slice(0, 7);
+if (tx$("year")) tx$("year").value = today().slice(0, 4);
 void loadTransactions();
 updateTransactionCategories();

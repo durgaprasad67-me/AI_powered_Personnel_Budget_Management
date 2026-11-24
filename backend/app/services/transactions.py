@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import date as Date
 import logging
+import re
 from typing import Any
 
 from app.core.config import get_settings
@@ -96,11 +97,13 @@ class TransactionService:
         if kind not in CASH_OUT_TYPES:
             return None
 
+        clean_cat = clean_lower(transaction.get("category")) if transaction.get("category") else None
+
         # Check monthly budget status
         if hasattr(self.budget_repository, "get_monthly_budget_status"):
             status = await self.budget_repository.get_monthly_budget_status(
                 date=str(transaction.get("date", "")),
-                category=transaction.get("category"),
+                category=clean_cat,
                 transaction_type=kind,
                 user_id=user_id,
                 exclude_transaction_id=exclude_id,
@@ -122,7 +125,7 @@ class TransactionService:
         # Fallback to legacy budget_violations if fake repo doesn't have method
         violations = await self.budget_repository.budget_violations(
             date=str(transaction["date"]),
-            category=transaction["category"],
+            category=clean_cat or "",
             transaction_type=transaction["transaction_type"],
             amount=float(transaction["amount"]),
             exclude_transaction_id=exclude_id,
@@ -346,14 +349,16 @@ class TransactionService:
     async def list(
         self,
         *,
-        transaction_type: str | None,
-        category: str | None,
-        start_date: str | None,
-        end_date: str | None,
-        limit: int,
-        skip: int,
+        transaction_type: str | None = None,
+        category: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        limit: int = 50,
+        skip: int = 0,
         user_id: str = DEFAULT_CURRENT_USER_ID,
         sort_descending: bool = True,
+        search: str | None = None,
+        sort_by: list[tuple[str, int]] | None = None,
     ) -> dict[str, Any]:
         filters: dict[str, Any] = {}
         if transaction_type:
@@ -373,6 +378,29 @@ class TransactionService:
             if end_date:
                 date_filter["$lte"] = end_date
             filters["date"] = date_filter
+        if search and search.strip():
+            term = search.strip()
+            escaped = re.escape(term)
+            or_clauses: list[dict[str, Any]] = [
+                {"description": {"$regex": escaped, "$options": "i"}},
+                {"category": {"$regex": escaped, "$options": "i"}},
+                {"transaction_type": {"$regex": escaped, "$options": "i"}},
+                {"date": {"$regex": escaped, "$options": "i"}},
+            ]
+            if " " in term:
+                or_clauses.append({"transaction_type": {"$regex": re.escape(term.replace(" ", "_")), "$options": "i"}})
+            elif "_" in term:
+                or_clauses.append({"transaction_type": {"$regex": re.escape(term.replace("_", " ")), "$options": "i"}})
+
+            cleaned_num_str = re.sub(r"[^\d.]", "", term)
+            if cleaned_num_str:
+                try:
+                    num_val = float(cleaned_num_str)
+                    or_clauses.append({"amount": num_val})
+                except ValueError:
+                    pass
+
+            filters["$or"] = or_clauses
 
         items, total = await self.repository.list(
             filters,
@@ -380,6 +408,7 @@ class TransactionService:
             limit=limit,
             skip=skip,
             sort_descending=sort_descending,
+            sort_by=sort_by,
         )
         return {"items": items, "total": total, "limit": limit, "skip": skip}
 

@@ -18,8 +18,13 @@ from app.services.insights import InsightService
 from app.services.transactions import TransactionService
 
 
-def get_current_user_id(authorization: str | None = Header(default=None)) -> str:
-    """Take user identity from JWT Bearer token when present, fallback to default user context."""
+def get_current_user_id(
+    authorization: str | None = Header(default=None),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+) -> str:
+    """Take user identity from X-User-Id header or JWT Bearer token when present, fallback to default user context."""
+    if x_user_id and x_user_id.strip():
+        return x_user_id.strip()
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization[7:].strip()
         parts = token.split(".")
@@ -32,6 +37,8 @@ def get_current_user_id(authorization: str | None = Header(default=None)) -> str
                     return user_id.strip()
             except Exception:
                 pass
+        elif token:
+            return token
     return DEFAULT_CURRENT_USER_ID
 
 

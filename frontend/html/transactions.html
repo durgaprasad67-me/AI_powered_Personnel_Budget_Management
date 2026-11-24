@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>FinSight AI | Transactions</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../assets/icons/dashboard_icon.png">
+  <link rel="apple-touch-icon" href="../assets/icons/dashboard_icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/app.css">
@@ -15,10 +19,22 @@
     <main class="main">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-btn" id="menuBtn" type="button">☰</button>
-          <div class="breadcrumb">Workspace / <strong>Transactions</strong></div>
+          <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="breadcrumb">Workspace <span>/</span> <strong id="crumb">Transactions</strong></div>
         </div>
-        <span class="avatar">D</span>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifyBtn" type="button" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notification-count" id="notificationCount" hidden>0</span>
+          </button>
+          <button class="profile-btn" id="profileBtn" type="button" aria-label="User profile">
+            <span class="avatar" data-user-initial>D</span>
+            <span data-user-name>Personal account</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
       </header>
 
       <div class="content">
@@ -50,7 +66,12 @@
             <select id="category" aria-label="Filter by category">
               <option value="">All categories</option>
             </select>
+            <div class="period-toggle" role="group" aria-label="Filter by period">
+              <button class="period-btn active" id="periodMonthly" type="button">Monthly</button>
+              <button class="period-btn" id="periodYearly" type="button">Yearly</button>
+            </div>
             <input id="month" type="month" aria-label="Filter by month">
+            <input id="year" type="number" min="2000" max="2100" step="1" placeholder="YYYY" aria-label="Filter by year" style="display: none;">
             <button class="secondary" id="clearFilters" type="button">Clear filters</button>
           </div>
 
@@ -167,6 +188,23 @@
       <button class="top-popup-close" id="topPopupClose" type="button" aria-label="Dismiss message">×</button>
     </div>
     <div class="top-popup-progress"><div class="top-popup-progress-bar" id="topPopupProgressBar"></div></div>
+  </div>
+  <div class="notification-modal" id="notificationModal" role="dialog" aria-modal="true"
+    aria-labelledby="notificationTitle" hidden>
+    <div class="notification-card">
+      <div class="notification-head">
+        <div>
+          <div class="eyebrow">Budget alerts</div>
+          <h2 id="notificationTitle">Notifications</h2>
+        </div>
+        <div class="notification-actions">
+          <label class="select-all-notifications"><input id="selectAllNotifications" type="checkbox"> Select all</label>
+          <button class="secondary" id="deleteSelectedNotifications" type="button">Delete selected</button>
+          <button class="close" id="closeNotifications" type="button" aria-label="Close notifications">×</button>
+        </div>
+      </div>
+      <div class="notification-list" id="notificationList"></div>
+    </div>
   </div>
   <div class="toast" id="toast"></div>
   <script src="https://unpkg.com/lucide@latest"></script>

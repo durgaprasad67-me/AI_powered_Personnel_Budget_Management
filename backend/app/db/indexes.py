@@ -1,4 +1,10 @@
-from app.db.collections import FINANCIAL_GOALS, RAG_DOCUMENTS, TRANSACTIONS
+from app.db.collections import (
+    FINANCIAL_GOALS,
+    IMPORTS,
+    IMPORT_STAGING,
+    RAG_DOCUMENTS,
+    TRANSACTIONS,
+)
 
 
 async def ensure_indexes(database) -> None:
@@ -12,6 +18,10 @@ async def ensure_indexes(database) -> None:
     await transactions.create_index(
         [("user_id", 1), ("date", -1), ("_id", -1)],
         name="transactions_user_date_id",
+    )
+    await transactions.create_index(
+        [("user_id", 1), ("fingerprint", 1)],
+        name="transactions_user_fingerprint",
     )
 
     goals = database[FINANCIAL_GOALS]
@@ -30,4 +40,26 @@ async def ensure_indexes(database) -> None:
         [("user_id", 1), ("doc_id", 1)],
         unique=True,
         name="rag_documents_user_doc_unique",
+    )
+
+    imports = database[IMPORTS]
+    await imports.create_index(
+        [("user_id", 1), ("raw_file_hash", 1)],
+        name="imports_user_raw_hash",
+    )
+    await imports.create_index(
+        [("user_id", 1), ("normalized_content_hash", 1)],
+        name="imports_user_norm_hash",
+    )
+
+    staging = database[IMPORT_STAGING]
+    await staging.create_index(
+        [("created_at", 1)],
+        expireAfterSeconds=1800,
+        name="import_staging_ttl",
+    )
+    await staging.create_index(
+        [("user_id", 1), ("import_token", 1)],
+        unique=True,
+        name="import_staging_token",
     )

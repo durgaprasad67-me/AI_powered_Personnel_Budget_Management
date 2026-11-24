@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FinSight AI | Reports</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../assets/icons/dashboard_icon.png">
+  <link rel="apple-touch-icon" href="../assets/icons/dashboard_icon.png">
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -26,12 +30,24 @@
       <!-- Top Navigation -->
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-btn" id="menuBtn">☰</button>
+          <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation">
+            <i data-lucide="menu"></i>
+          </button>
           <div class="breadcrumb">
-            Workspace / <strong>Reports</strong>
+            Workspace <span>/</span> <strong id="crumb">Reports</strong>
           </div>
         </div>
-        <span class="avatar">D</span>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifyBtn" type="button" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notification-count" id="notificationCount" hidden>0</span>
+          </button>
+          <button class="profile-btn" id="profileBtn" type="button" aria-label="User profile">
+            <span class="avatar" data-user-initial>D</span>
+            <span data-user-name>Personal account</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
       </header>
       
       <!-- Page Content -->

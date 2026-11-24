@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import re
 import threading
 from datetime import date, datetime, time, timezone
 from enum import Enum
@@ -120,6 +121,78 @@ def _configuration_space(collection: Any) -> str | None:
     return None
 
 
+def _archive_and_recreate_collection(
+    client: chromadb.ClientAPI,
+    legacy_col: Any,
+    collection_name: str,
+    expected_metadata: dict[str, str | int],
+    embeddings: Any,
+) -> None:
+    """Safely archive incompatible collection without data loss and create a clean replacement."""
+    stored_data = legacy_col.get(include=["documents", "metadatas"])
+    doc_texts = stored_data.get("documents") or []
+    doc_metas = stored_data.get("metadatas") or []
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    archive_name = f"{collection_name}_legacy_{timestamp}"
+    try:
+        legacy_col.modify(name=archive_name)
+        logger.info("Preserved legacy collection as '%s'", archive_name)
+    except Exception as e:
+        logger.warning("Could not rename legacy collection '%s': %s", collection_name, e)
+
+    col_meta = dict(expected_metadata)
+    col_meta["hnsw:space"] = "cosine"
+    new_col = client.create_collection(
+        name=collection_name,
+        metadata=col_meta,
+        configuration={"hnsw": {"space": "cosine"}},
+    )
+    logger.info("Created replacement collection '%s' with cosine configuration", collection_name)
+
+    if doc_texts and doc_metas:
+        unique_chunks: dict[str, tuple[str, dict[str, Any]]] = {}
+        for text, meta in zip(doc_texts, doc_metas):
+            if not text or not meta:
+                continue
+            uid = meta.get("user_id")
+            if not uid or not str(uid).strip():
+                continue
+            doc_id = meta.get("doc_id")
+            chunk_idx = meta.get("chunk_index", 0)
+            key = f"{uid}:{doc_id}:{chunk_idx}"
+            if key not in unique_chunks:
+                unique_chunks[key] = (text, meta)
+
+        if unique_chunks:
+            migrate_texts = [v[0] for v in unique_chunks.values()]
+            clean_metas = []
+            for text, meta in unique_chunks.values():
+                m_clean = sanitize_metadata(dict(meta))
+                m_clean["embedding_model"] = expected_metadata["embedding_model"]
+                m_clean["vector_state"] = "indexed"
+                m_clean["source_type"] = m_clean.get("source_type", "document")
+                clean_metas.append(m_clean)
+            migrate_ids = list(unique_chunks.keys())
+
+            try:
+                vectors = embeddings.embed_documents(migrate_texts)
+                new_col.add(
+                    ids=migrate_ids,
+                    documents=migrate_texts,
+                    metadatas=clean_metas,
+                    embeddings=vectors,
+                )
+                logger.info(
+                    "Migrated %d chunks with new %d-dim embeddings into '%s'",
+                    len(migrate_ids),
+                    len(vectors[0]) if vectors else 0,
+                    collection_name,
+                )
+            except Exception as exc:
+                logger.warning("Could not re-embed legacy chunks during migration: %s", exc)
+
+
 def _validate_collection(
     store: Chroma,
     embedding_function: Any,
@@ -188,6 +261,7 @@ def get_vector_store() -> Chroma:
         client = chromadb.PersistentClient(path=str(persist_directory))
         embeddings = get_embedding_model()
         expected = _expected_collection_metadata()
+
         store = Chroma(
             client=client,
             collection_name=settings.chroma_collection_name,
@@ -285,6 +359,44 @@ def transaction_vector_is_current(
     )
 
 
+def get_existing_content_hashes(
+    user_id: str,
+    content_hashes: Iterable[str],
+) -> set[str]:
+    """Find which content_hashes already exist in Chroma for this user in indexed state."""
+    hash_list = [h for h in set(content_hashes) if h]
+    if not hash_list:
+        return set()
+    user_id = _validate_user_id(user_id)
+    collection = _raw_collection()
+    if collection is None:
+        return set()
+    try:
+        if len(hash_list) == 1:
+            hash_clause: dict[str, Any] = {"content_hash": hash_list[0]}
+        else:
+            hash_clause = {"content_hash": {"$in": hash_list}}
+        where: dict[str, Any] = {
+            "$and": [
+                {"user_id": user_id},
+                {"vector_state": "indexed"},
+                hash_clause,
+            ]
+        }
+        result = collection.get(where=where, include=["metadatas"])
+        found: set[str] = set()
+        for meta in result.get("metadatas", []):
+            if meta and meta.get("content_hash"):
+                found.add(str(meta["content_hash"]))
+        return found
+    except Exception as exc:
+        logger.warning(
+            "Could not query existing content hashes from vector store",
+            extra={"error_type": type(exc).__name__},
+        )
+        return set()
+
+
 def document_vectors_are_current(
     doc_id: str,
     user_id: str,
@@ -354,6 +466,10 @@ def _prepare_documents(
             )
         if source_type == "document":
             metadata.setdefault("chunk_index", index)
+            if "doc_id" in metadata and "document_id" not in metadata:
+                metadata["document_id"] = metadata["doc_id"]
+            elif "document_id" in metadata and "doc_id" not in metadata:
+                metadata["doc_id"] = metadata["document_id"]
         safe_metadata = sanitize_metadata(metadata)
         safe_document = Document(
             page_content=document.page_content,
@@ -525,10 +641,14 @@ async def retrieve_documents(
     requested_k = settings.rag_top_k if k is None else k
     if requested_k < 1 or requested_k > 20:
         raise ValueError("k must be between 1 and 20.")
-    top_k = min(requested_k, settings.rag_top_k)
+    top_k = requested_k
     minimum_score = settings.rag_min_score if threshold is None else threshold
     if not 0.0 <= minimum_score <= 1.0:
         raise ValueError("threshold must be between 0 and 1.")
+
+    # Candidate pool expansion: fetch at least max(top_k * 3, 12) candidates so
+    # duplicate or near-duplicate chunks cannot crowd out relevant unique chunks.
+    fetch_k = max(top_k * 3, 12)
 
     # Collection creation validates a probe embedding synchronously. Keep that
     # first-use network call off the event loop used by FastAPI requests.
@@ -542,16 +662,68 @@ async def retrieve_documents(
     collection = getattr(store, "_collection", None)
 
     if collection is None:
-        matches = await store.asimilarity_search_with_relevance_scores(
+        raw_matches = await store.asimilarity_search_with_relevance_scores(
             query=question,
-            k=top_k,
+            k=fetch_k,
             filter=where,
         )
-        return [
-            (document, float(score))
-            for document, score in matches
-            if include_below_threshold or float(score) >= minimum_score
-        ]
+        seen_chunk_ids: set[str] = set()
+        seen_chunk_keys: set[tuple[str, int]] = set()
+        seen_chunk_hashes: set[str] = set()
+        seen_text_fingerprints: set[str] = set()
+        matches: list[tuple[Document, float]] = []
+
+        for document, score in raw_matches:
+            meta = document.metadata or {}
+            chunk_user = meta.get("user_id")
+            if chunk_user is not None and chunk_user != user_id:
+                continue
+
+            clean_text = (document.page_content or "").strip()
+            cid = str(meta.get("chunk_id", ""))
+            doc_id = meta.get("doc_id")
+            chunk_index = meta.get("chunk_index")
+            chunk_hash = hashlib.sha256(clean_text.encode("utf-8")).hexdigest() if clean_text else ""
+            tfp = re.sub(r"\s+", " ", clean_text.casefold())
+
+            is_dup = False
+            if cid and cid in seen_chunk_ids:
+                is_dup = True
+            elif doc_id and chunk_index is not None and (str(doc_id), int(chunk_index)) in seen_chunk_keys:
+                is_dup = True
+            elif chunk_hash and chunk_hash in seen_chunk_hashes:
+                is_dup = True
+            elif tfp and len(tfp) > 30 and tfp in seen_text_fingerprints:
+                is_dup = True
+
+            if is_dup:
+                continue
+
+            if cid:
+                seen_chunk_ids.add(cid)
+            if doc_id and chunk_index is not None:
+                seen_chunk_keys.add((str(doc_id), int(chunk_index)))
+            if chunk_hash:
+                seen_chunk_hashes.add(chunk_hash)
+            if tfp:
+                seen_text_fingerprints.add(tfp)
+
+            if not include_below_threshold and float(score) < minimum_score:
+                continue
+
+            matches.append((document, float(score)))
+            if not include_below_threshold and len(matches) >= top_k:
+                break
+        return matches
+
+    candidate_fetch_k = fetch_k
+    if hasattr(collection, "count"):
+        try:
+            total_in_col = collection.count()
+            if total_in_col > 0:
+                candidate_fetch_k = min(candidate_fetch_k, max(total_in_col, top_k))
+        except Exception:
+            pass
 
     embedding_function = getattr(store, "_embedding_function", None)
     if embedding_function is None:
@@ -560,7 +732,7 @@ async def retrieve_documents(
     result = await asyncio.to_thread(
         collection.query,
         query_embeddings=[query_vector],
-        n_results=top_k,
+        n_results=candidate_fetch_k,
         where=where,
         include=["documents", "metadatas", "distances"],
     )
@@ -570,14 +742,83 @@ async def retrieve_documents(
     metadatas = (result.get("metadatas") or [[]])[0]
     distances = (result.get("distances") or [[]])[0]
 
-    matches: list[tuple[Document, float]] = []
+    seen_chunk_ids: set[str] = set()
+    seen_chunk_keys: set[tuple[str, int]] = set()
+    seen_chunk_hashes: set[str] = set()
+    seen_text_fingerprints: set[str] = set()
+
+    matches = []
+    duplicate_count = 0
+
     for chunk_id, text, metadata, distance in zip(ids, texts, metadatas, distances):
         score = cosine_distance_to_score(float(distance))
-        if not include_below_threshold and score < minimum_score:
-            continue
         safe_metadata = sanitize_metadata(metadata or {})
         safe_metadata["chunk_id"] = str(chunk_id)
+
+        # Fail-closed ownership verification: drop any chunk not belonging to authenticated user
+        chunk_user = safe_metadata.get("user_id")
+        if chunk_user != user_id:
+            logger.warning(
+                "Cross-user retrieval attempt blocked: chunk user '%s' != authenticated user '%s'",
+                chunk_user,
+                user_id,
+            )
+            continue
+
+        clean_text = (text or "").strip()
+        doc_id = safe_metadata.get("doc_id")
+        chunk_index = safe_metadata.get("chunk_index")
+        chunk_hash = hashlib.sha256(clean_text.encode("utf-8")).hexdigest() if clean_text else ""
+        text_fingerprint = re.sub(r"\s+", " ", clean_text.casefold())
+
+        # Duplicate chunk prevention: detect identical chunk IDs, identical (doc_id, chunk_index),
+        # identical chunk text hash, or identical normalized text
+        is_duplicate = False
+        if str(chunk_id) in seen_chunk_ids:
+            is_duplicate = True
+        elif doc_id and chunk_index is not None and (str(doc_id), int(chunk_index)) in seen_chunk_keys:
+            is_duplicate = True
+        elif chunk_hash and chunk_hash in seen_chunk_hashes:
+            is_duplicate = True
+        elif text_fingerprint and len(text_fingerprint) > 30 and text_fingerprint in seen_text_fingerprints:
+            is_duplicate = True
+
+        if is_duplicate:
+            duplicate_count += 1
+            safe_metadata["is_duplicate"] = True
+            logger.debug(
+                "Duplicate chunk filtered out: chunk_id=%s, doc_id=%s, chunk_index=%s, source=%s",
+                chunk_id,
+                doc_id,
+                chunk_index,
+                safe_metadata.get("source"),
+            )
+            continue
+
+        # Register this unique chunk
+        seen_chunk_ids.add(str(chunk_id))
+        if doc_id and chunk_index is not None:
+            seen_chunk_keys.add((str(doc_id), int(chunk_index)))
+        if chunk_hash:
+            seen_chunk_hashes.add(chunk_hash)
+        if text_fingerprint:
+            seen_text_fingerprints.add(text_fingerprint)
+
+        if not include_below_threshold and score < minimum_score:
+            continue
+
         matches.append((Document(page_content=text or "", metadata=safe_metadata), score))
+        if not include_below_threshold and len(matches) >= top_k:
+            break
+
+    if duplicate_count > 0:
+        logger.info(
+            "Chroma retrieval deduplicated %d chunks for user %s (unique candidates: %d)",
+            duplicate_count,
+            user_id,
+            len(matches),
+        )
+
     return matches
 
 
@@ -628,6 +869,23 @@ def delete_document(doc_id: str, user_id: str) -> bool:
         if metadata and metadata.get("source_type", "document") == "document"
     ]
     if not ids:
+        records_alt = collection.get(
+            where={
+                "$and": [
+                    {"document_id": doc_id},
+                    {"user_id": user_id},
+                ]
+            },
+            include=["metadatas"],
+        )
+        ids = [
+            chunk_id
+            for chunk_id, metadata in zip(
+                records_alt.get("ids", []), records_alt.get("metadatas", [])
+            )
+            if metadata and metadata.get("source_type", "document") == "document"
+        ]
+    if not ids:
         return False
     collection.delete(ids=ids)
     return True
@@ -650,6 +908,34 @@ def delete_transaction(transaction_id: str | int, user_id: str) -> bool:
         return False
     collection.delete(ids=[chunk_id])
     return True
+
+
+def delete_transactions_by_import_id(import_id: str, user_id: str) -> int:
+    """Delete all transaction vectors matching import_id for a given user."""
+    user_id = _validate_user_id(user_id)
+    if not import_id:
+        return 0
+    collection = _raw_collection()
+    if collection is None:
+        return 0
+    try:
+        where: dict[str, Any] = {
+            "$and": [
+                {"user_id": user_id},
+                {"import_id": str(import_id)},
+            ]
+        }
+        records = collection.get(where=where, include=["metadatas"])
+        ids = records.get("ids", [])
+        if ids:
+            collection.delete(ids=ids)
+        return len(ids)
+    except Exception as exc:
+        logger.warning(
+            "Could not delete vectors by import_id",
+            extra={"error_type": type(exc).__name__},
+        )
+        return 0
 
 
 def delete_documents(document_ids: list[str]) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
+import re
 from typing import Any
 
 from bson import ObjectId
@@ -26,6 +27,27 @@ class FakeTransactionRepository:
         saved["user_id"] = user_id
         saved["vector_index_status"] = "pending"
         saved.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+        if "fingerprint" not in saved:
+            from app.services.importing.deduplication import (
+                compute_row_fingerprint,
+                compute_row_fingerprint_base,
+            )
+            base_key = compute_row_fingerprint_base(
+                user_id=user_id,
+                date_str=str(saved.get("date", "")),
+                description=str(saved.get("description", "")),
+                amount=float(saved.get("amount", 0.0)),
+                tx_type=str(saved.get("transaction_type", "expense")),
+            )
+            count = sum(
+                1
+                for d in self.documents.values()
+                if self._belongs_to_user(d, user_id)
+                and d.get("fingerprint_base") == base_key
+            )
+            saved["fingerprint_base"] = base_key
+            saved["occurrence"] = count + 1
+            saved["fingerprint"] = compute_row_fingerprint(base_key, count + 1)
         saved["id"] = self.next_id
         self.next_id += 1
         self.documents[saved["id"]] = saved
@@ -62,6 +84,7 @@ class FakeTransactionRepository:
         limit: int,
         skip: int,
         sort_descending: bool = True,
+        sort_by: list[tuple[str, int]] | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
         items = [
             deepcopy(document)
@@ -71,13 +94,20 @@ class FakeTransactionRepository:
                 self._matches(document, key, value) for key, value in filters.items()
             )
         ]
-        items.sort(
-            key=lambda document: (
-                str(document.get("date", "")),
-                int(document["id"]),
-            ),
-            reverse=sort_descending,
-        )
+        if sort_by:
+            for field, direction in reversed(sort_by):
+                items.sort(
+                    key=lambda doc: doc.get(field, 0),
+                    reverse=(direction == -1),
+                )
+        else:
+            items.sort(
+                key=lambda document: (
+                    str(document.get("date", "")),
+                    int(document.get("id", 0) if isinstance(document.get("id"), int) else 0),
+                ),
+                reverse=sort_descending,
+            )
         return items[skip : skip + limit], len(items)
 
     async def get(
@@ -173,7 +203,17 @@ class FakeTransactionRepository:
 
     @staticmethod
     def _matches(document: dict[str, Any], key: str, value: Any) -> bool:
+        if key == "$or" and isinstance(value, list):
+            return any(
+                all(FakeTransactionRepository._matches(document, k, v) for k, v in clause.items())
+                for clause in value
+            )
         if isinstance(value, dict):
+            if "$regex" in value:
+                pattern = value["$regex"]
+                flags = re.IGNORECASE if "i" in value.get("$options", "") else 0
+                actual = str(document.get(key, ""))
+                return bool(re.search(pattern, actual, flags))
             actual = document.get(key)
             return all(
                 (actual >= bound if operator == "$gte" else actual <= bound)
@@ -314,7 +354,7 @@ class FakeBudgetRepository:
                         continue
                 elif tx_type != transaction_type:
                     continue
-                tx_cat = tx.get("category")
+                tx_cat = (tx.get("category") or "").strip().lower()
                 if cat_vals and (not tx_cat or tx_cat not in cat_vals):
                     continue
                 total += float(tx.get("amount", 0.0))
@@ -353,6 +393,7 @@ class FakeBudgetRepository:
                 "warning": None,
             }
 
+        clean_category = category.strip().lower() if category else None
         matching_budgets = []
         for b in self.documents.values():
             b_start = str(b.get("start_date", ""))
@@ -366,7 +407,7 @@ class FakeBudgetRepository:
             if b_type != "all" and b_type != transaction_type:
                 continue
             cat_vals = _category_values(b.get("category"))
-            if cat_vals and (not category or category not in cat_vals):
+            if cat_vals and (not clean_category or clean_category not in cat_vals):
                 continue
             matching_budgets.append(b)
 
@@ -526,6 +567,22 @@ class FakeRAGDocumentRepository:
     async def upsert_source(self, document: dict[str, Any]):
         key = (document["user_id"], document["normalized_filename"])
         saved = deepcopy(document)
+        doc_id = str(saved.get("doc_id") or saved.get("document_id") or "")
+        if doc_id:
+            saved["doc_id"] = doc_id
+            saved["document_id"] = doc_id
+        source = str(saved.get("source") or saved.get("original_filename") or "")
+        if source:
+            saved["source"] = source
+            saved["original_filename"] = source
+        status = str(saved.get("status") or saved.get("vector_index_status") or "processing")
+        saved["status"] = status
+        saved["vector_index_status"] = status
+        chunks = int(saved.get("chunk_count") or saved.get("chunks_created") or 0)
+        saved["chunk_count"] = chunks
+        saved["chunks_created"] = chunks
+        saved["collection_name"] = str(saved.get("collection_name") or saved.get("chroma_collection") or "finsight_knowledge")
+        saved["chroma_collection"] = saved["collection_name"]
         self.documents[key] = saved
         return deepcopy(saved)
 
@@ -534,7 +591,7 @@ class FakeRAGDocumentRepository:
             (
                 deepcopy(item)
                 for item in self.documents.values()
-                if item["user_id"] == user_id and item["doc_id"] == doc_id
+                if item["user_id"] == user_id and (item.get("doc_id") == doc_id or item.get("document_id") == doc_id)
             ),
             None,
         )
@@ -548,19 +605,44 @@ class FakeRAGDocumentRepository:
         indexed_at: str,
         embedding_model: str,
         chunks_created: int,
+        collection_name: str | None = None,
     ) -> bool:
         for item in self.documents.values():
             if (
                 item["user_id"] == user_id
-                and item["doc_id"] == doc_id
-                and item["content_hash"] == content_hash
+                and (item.get("doc_id") == doc_id or item.get("document_id") == doc_id)
+                and item.get("content_hash") == content_hash
             ):
                 item.update(
                     {
-                        "vector_index_status": "indexed",
+                        "status": "completed",
+                        "vector_index_status": "completed",
                         "vector_indexed_at": indexed_at,
+                        "indexed_at": indexed_at,
                         "embedding_model": embedding_model,
                         "chunks_created": chunks_created,
+                        "chunk_count": chunks_created,
+                        "collection_name": collection_name or "finsight_knowledge",
+                        "chroma_collection": collection_name or "finsight_knowledge",
+                    }
+                )
+                return True
+        return False
+
+    async def mark_failed(
+        self,
+        *,
+        user_id: str,
+        doc_id: str,
+        error_message: str,
+    ) -> bool:
+        for item in self.documents.values():
+            if item["user_id"] == user_id and (item.get("doc_id") == doc_id or item.get("document_id") == doc_id):
+                item.update(
+                    {
+                        "status": "failed",
+                        "vector_index_status": "failed",
+                        "error_message": error_message,
                     }
                 )
                 return True
@@ -571,7 +653,7 @@ class FakeRAGDocumentRepository:
             (
                 key
                 for key, item in self.documents.items()
-                if item["user_id"] == user_id and item["doc_id"] == doc_id
+                if item["user_id"] == user_id and (item.get("doc_id") == doc_id or item.get("document_id") == doc_id)
             ),
             None,
         )

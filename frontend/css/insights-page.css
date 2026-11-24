@@ -204,6 +204,17 @@
   color: var(--navy);
 }
 
+.savings-tag {
+  color: #15803d;
+  font-weight: 700;
+  font-size: 12px;
+  background: #f0fdf4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #bbf7d0;
+  margin-left: 4px;
+}
+
 /* Empty & Loading States */
 .result-card .empty,
 .result-card .loading {
@@ -255,6 +266,45 @@
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+/* Privacy / Access Denied Warning Box */
+.insight-warning-box {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-left: 4px solid #e53e3e;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fed7d7;
+  color: #9b2c2c;
+  font-family: Manrope, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.warning-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.insight-warning-box h2 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #742a2a !important;
+  margin: 0 !important;
+  line-height: 1.5;
 }
 
 @media (max-width: 768px) {

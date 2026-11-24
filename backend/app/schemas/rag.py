@@ -13,7 +13,7 @@ class RAGHistoryMessage(BaseModel):
 class RAGQuestionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=3, max_length=1000)
-    k: int = Field(default=4, ge=1, le=10)
+    k: int = Field(default=6, ge=1, le=10)
     history: list[RAGHistoryMessage] = Field(default_factory=list, max_length=8)
     source_type: Literal["document", "transaction"] | None = None
     start_date: date | None = None

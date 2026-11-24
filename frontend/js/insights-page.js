@@ -4,18 +4,43 @@ const insight$ = (id) => document.getElementById(id);
 
 function renderInsight(result) {
   const root = insight$("insightResult");
+  const isWarning = result.summary && (result.summary.includes("Access Denied") || result.summary.startsWith("⚠️"));
+
+  // Filter out any findings that repeat the summary (preventing duplicate answers)
+  const summaryNorm = (result.summary || "").trim().toLowerCase();
+  const distinctFindings = (result.key_findings || []).filter((finding) => {
+    const fNorm = (finding || "").trim().toLowerCase();
+    if (!fNorm || fNorm === summaryNorm) return false;
+    if (summaryNorm.length > 20 && (summaryNorm.includes(fNorm) || fNorm.includes(summaryNorm))) return false;
+    return true;
+  });
+
+  // Omit recommendations for access denied warnings or when empty
+  const activeRecs = isWarning ? [] : (result.recommendations || []);
+
   root.innerHTML = `
-    <h2>${result.summary}</h2>
-    ${result.key_findings?.length ? `
+    ${isWarning ? `
+      <div class="insight-warning-box">
+        <div class="warning-badge"><i data-lucide="shield-alert"></i> Privacy Protection</div>
+        <h2>${result.summary}</h2>
+      </div>
+    ` : `
+      <h2>${result.summary}</h2>
+    `}
+    ${distinctFindings.length ? `
       <div class="result-section">
         <h3>Key findings</h3>
-        <ul>${result.key_findings.map((x) => `<li>${x}</li>`).join("")}</ul>
+        <ul>${distinctFindings.map((x) => `<li>${x}</li>`).join("")}</ul>
       </div>
     ` : ""}
-    ${result.recommendations?.length ? `
+    ${activeRecs.length ? `
       <div class="result-section">
         <h3>Recommendations</h3>
-        <ul>${result.recommendations.map((x) => `<li><strong>${x.title}:</strong> ${x.explanation}</li>`).join("")}</ul>
+        <ul>${activeRecs.map((x) => {
+          const savings = x.estimated_monthly_savings ? ` <span class="savings-tag">(Estimated savings: ₹${Number(x.estimated_monthly_savings).toLocaleString('en-IN')}/mo)</span>` : '';
+          const formattedExp = (x.explanation || '').replace(/\n/g, '<br>');
+          return `<li><strong>${x.title}:</strong> ${formattedExp}${savings}</li>`;
+        }).join("")}</ul>
       </div>
     ` : ""}
     ${result.limitations?.length ? `
@@ -44,15 +69,10 @@ insight$("insightForm").addEventListener("submit", async (event) => {
   }
 
   try {
-    const now = new Date();
-    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
     const result = await FinSight.api("/ai/spending-insights", {
       method: "POST",
       body: JSON.stringify({
         question: insight$("question").value.trim(),
-        start_date: start,
-        end_date: end,
         include_recommendations: insight$("recommendations").checked,
       }),
     });

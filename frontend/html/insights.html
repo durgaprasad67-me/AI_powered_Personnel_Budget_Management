@@ -1,42 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FinSight AI | Insights</title>
 
-  <!-- Fonts -->
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../assets/icons/dashboard_icon.png">
+  <link rel="apple-touch-icon" href="../assets/icons/dashboard_icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="../css/app.css">
   <link rel="stylesheet" href="../css/insights-page.css">
 </head>
+
 <body data-page="AI insights">
 
   <div class="app-shell">
-    
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar"></aside>
-    
+
     <!-- Main Content -->
     <main class="main">
-      
+
       <!-- Top Navigation -->
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-btn" id="menuBtn">☰</button>
+          <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation">
+            <i data-lucide="menu"></i>
+          </button>
           <div class="breadcrumb">
-            Workspace / <strong>AI insights</strong>
+            Workspace <span>/</span> <strong id="crumb">AI insights</strong>
           </div>
         </div>
-        <span class="avatar">D</span>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifyBtn" type="button" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notification-count" id="notificationCount" hidden>0</span>
+          </button>
+          <button class="profile-btn" id="profileBtn" type="button" aria-label="User profile">
+            <span class="avatar" data-user-initial>D</span>
+            <span data-user-name>Personal account</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
       </header>
-      
+
       <!-- Page Content -->
       <div class="content">
-        
+
         <!-- Page Header -->
         <div class="page-heading">
           <div>
@@ -45,10 +63,10 @@
             <p class="subtitle">Get clear answers about spending, budgets, and goals.</p>
           </div>
         </div>
-        
+
         <!-- Insights Grid -->
         <section class="grid grid-2 insights-grid">
-          
+
           <!-- Insight Request Form -->
           <article class="card insight-form-card">
             <h2>Spending insight</h2>
@@ -57,10 +75,11 @@
                 <div class="field-label-row">
                   <label for="question">Question</label>
                 </div>
-                <textarea id="question" rows="6" minlength="3" required placeholder="Where am I spending most?"></textarea>
+                <textarea id="question" rows="6" minlength="3" required
+                  placeholder="Where am I spending most?"></textarea>
               </div>
               <label class="check">
-                <input type="checkbox" id="recommendations" checked> 
+                <input type="checkbox" id="recommendations" checked>
                 Include recommendations
               </label>
               <div class="form-actions">
@@ -73,7 +92,7 @@
               </div>
             </form>
           </article>
-          
+
           <!-- Insight Results Area (Bounded with Vertical Scrollbar) -->
           <article class="card result-card" id="insightResult">
             <div class="empty">
@@ -84,7 +103,7 @@
           </article>
 
         </section>
-        
+
       </div>
     </main>
   </div>
@@ -96,6 +115,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../js/app.js"></script>
   <script src="../js/insights-page.js"></script>
-  
+
 </body>
+
 </html>

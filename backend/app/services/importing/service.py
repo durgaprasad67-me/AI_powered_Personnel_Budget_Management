@@ -92,29 +92,49 @@ async def insert_transactions(
     repository: TransactionRepository,
     *,
     user_id: str = DEFAULT_CURRENT_USER_ID,
+    import_id: str | None = None,
     vector_sync=sync_transactions_best_effort,
+    status_callback=None,
 ) -> list[str]:
     imported_ids: list[str] = []
     saved_transactions: list[dict[str, Any]] = []
     for transaction in transactions:
         document = transaction.model_dump(mode="json")
+        if import_id:
+            document["import_id"] = import_id
         inserted = await repository.create(document, user_id=user_id)
         if inserted is None or inserted.get("id") is None:
             raise RuntimeError("Database helper did not return an inserted ID.")
         imported_ids.append(str(inserted["id"]))
         saved_transactions.append(inserted)
 
+    if status_callback:
+        await status_callback("embedding")
+
     # Mongo is the source of truth. A vector outage leaves these rows pending
     # and must not fail an otherwise successful bulk import.
+    sync_ok = True
+    sync_err = None
     try:
-        await vector_sync(
-            saved_transactions,
-            user_id=user_id,
-            repository=repository,
-        )
+        if vector_sync:
+            sync_ok = await vector_sync(
+                saved_transactions,
+                user_id=user_id,
+                repository=repository,
+            )
     except Exception as exc:
+        sync_ok = False
+        sync_err = exc
         logger.warning(
             "Imported transactions were saved but vector indexing failed",
             extra={"error_type": type(exc).__name__},
         )
+
+    if status_callback:
+        if sync_ok is not False and sync_err is None:
+            await status_callback("completed")
+        else:
+            err_msg = str(sync_err) if sync_err else "Vector indexing failed"
+            await status_callback("embedding_failed", err_msg)
+
     return imported_ids

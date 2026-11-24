@@ -359,17 +359,22 @@ def index_parsed_document(
         )
 
     embedding_model = get_settings().gemini_embedding_model
+    collection_name = get_settings().chroma_collection_name
     for chunk_index, chunk in enumerate(chunks):
         chunk.metadata.update(
             {
                 "doc_id": doc_id,
+                "document_id": doc_id,
                 "user_id": user_id,
                 "source_type": "document",
                 "source": source_filename,
+                "original_filename": source_filename,
                 "chunk_index": chunk_index,
                 "content_hash": content_hash_value,
                 "uploaded_at": uploaded_at,
                 "embedding_model": embedding_model,
+                "collection_name": collection_name,
+                "chroma_collection": collection_name,
                 "vector_state": "indexed",
             }
         )

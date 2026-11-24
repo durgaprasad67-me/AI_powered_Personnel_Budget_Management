@@ -81,6 +81,7 @@ def get_chat_model(api_key: str | SecretStr) -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=settings.gemini_model,
         google_api_key=SecretStr(_key_value(api_key)),
+        temperature=0.0,
         retries=1,
         request_timeout=settings.gemini_request_timeout_seconds,
         max_tokens=settings.gemini_max_output_tokens,

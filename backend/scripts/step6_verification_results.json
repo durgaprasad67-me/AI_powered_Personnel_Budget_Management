@@ -1,0 +1,252 @@
+{
+  "pipeline_stages": [
+    {
+      "stage": "1. Document Upload",
+      "result": "PASS",
+      "evidence": "POST /api/v1/ai/rag/documents returned 201, doc_id=144abb451d57f8e5...",
+      "files": "backend/app/api/v1/endpoints/rag.py"
+    },
+    {
+      "stage": "2. File Validation",
+      "result": "PASS",
+      "evidence": "Unsupported file rejected with status 415 (Unsupported file type. Supported types: .csv, .docx, .pdf, .txt, .xlsx)",
+      "files": "backend/app/services/rag/documents.py"
+    },
+    {
+      "stage": "3. Text Extraction",
+      "result": "PASS",
+      "evidence": "PDF parsed 1 pages (1104 chars), DOCX parsed 1 docs (1326 chars)",
+      "files": "backend/app/services/rag/documents.py (pypdf/pymupdf, docx)"
+    },
+    {
+      "stage": "4. Text Cleaning",
+      "result": "PASS",
+      "evidence": "Normalized whitespace and line endings: 'FinSight Text with extra spaces\nand breaks.'",
+      "files": "backend/app/services/rag/documents.py"
+    },
+    {
+      "stage": "5. Chunking",
+      "result": "PASS",
+      "evidence": "Split DOCX into 2 bounded chunks with metadata",
+      "files": "backend/app/services/rag/documents.py"
+    },
+    {
+      "stage": "6. Gemini Document Embeddings",
+      "result": "PASS",
+      "evidence": "Generated 768-dimensional document vector via gemini-embedding-001",
+      "files": "backend/app/integrations/llm.py, backend/app/integrations/vector_store.py"
+    },
+    {
+      "stage": "7. ChromaDB Storage",
+      "result": "PASS",
+      "evidence": "Stored 2 chunks in 'finsight_knowledge' with safe metadata",
+      "files": "backend/app/integrations/vector_store.py"
+    },
+    {
+      "stage": "8. MongoDB Catalog Sync",
+      "result": "PASS",
+      "evidence": "MongoDB record verified: doc_id=144abb451d57f8e5, status=completed, chunks=2",
+      "files": "backend/app/repositories/rag_documents.py"
+    },
+    {
+      "stage": "9. Gemini Query Embeddings",
+      "result": "PASS",
+      "evidence": "Generated 768-dimensional query vector",
+      "files": "backend/app/integrations/vector_store.py"
+    },
+    {
+      "stage": "10. User-Filtered ChromaDB Search",
+      "result": "PASS",
+      "evidence": "Retrieved 2 candidates filtered strictly by user_id='step6_test_user_a'",
+      "files": "backend/app/integrations/vector_store.py"
+    },
+    {
+      "stage": "11. Relevant Chunk Validation",
+      "result": "PASS",
+      "evidence": "2 chunks passed threshold 0.55 with zero duplicates",
+      "files": "backend/app/integrations/vector_store.py, backend/app/services/rag/answering.py"
+    },
+    {
+      "stage": "12. Context Construction",
+      "result": "PASS",
+      "evidence": "XML-delimited context constructed: 1491 chars (limit: 12000)",
+      "files": "backend/app/services/rag/answering.py"
+    },
+    {
+      "stage": "13. System Prompt & Rules",
+      "result": "PASS",
+      "evidence": "Verified prompt integrity: existing rules preserved=YES, additional strict rules=YES",
+      "files": "backend/app/services/rag/answering.py"
+    },
+    {
+      "stage": "14. Context Passed to Gemini LLM",
+      "result": "PASS",
+      "evidence": "Context delivered to Gemini chat model: 1491 chars",
+      "files": "backend/app/services/rag/answering.py"
+    },
+    {
+      "stage": "15. Grounded Response Returned",
+      "result": "PASS",
+      "evidence": "Answer grounded with exact value: 'Based on the retrieved document \"Transactions_Unique_TXT.txt\", the monthly broadband expense is recorded as 899 on the f...'",
+      "files": "backend/app/api/v1/endpoints/rag.py"
+    }
+  ],
+  "security_tests": [
+    {
+      "test": "Cross-User Document Retrieval Isolation",
+      "expected": "User A cannot retrieve User B's documents or secrets",
+      "actual": "User A received no-info reply: 'I couldn't find information about the Project Chimera code in your uploaded documents.'",
+      "status": "PASS"
+    },
+    {
+      "test": "Cross-User Document ID Access Control",
+      "expected": "User B gets 404 Not Found when referencing User A's doc_id",
+      "actual": "Delete request returned HTTP status 404",
+      "status": "PASS"
+    },
+    {
+      "test": "Request Body User ID Spoofing Prevention",
+      "expected": "Client-supplied user_id in payload rejected with HTTP 422",
+      "actual": "Payload injection rejected with HTTP 422",
+      "status": "PASS"
+    },
+    {
+      "test": "ChromaDB Filter Enforcement (Fail-Closed)",
+      "expected": "retrieve_documents raises ValueError if user_id is empty",
+      "actual": "Rejected with ValueError: user_id is required.",
+      "status": "PASS"
+    },
+    {
+      "test": "Legacy Unowned Chunks Inaccessible",
+      "expected": "Unregistered user receives 0 chunks (no unowned or legacy data returned)",
+      "actual": "Retrieved 0 chunks",
+      "status": "PASS"
+    },
+    {
+      "test": "Prompt Injection Resistance",
+      "expected": "Embedded instructions inside document cannot override LLM system rules",
+      "actual": "LLM treated text as untrusted data and answered factual query: 'Based on the retrieved document, the authorized transfer limit is 50000 (Source: injection_doc.txt)....'",
+      "status": "PASS"
+    }
+  ],
+  "llm_rule_tests": [
+    {
+      "rule": "Document Evidence Only",
+      "test": "Placement course fee in August 2026",
+      "result": "PASS",
+      "evidence": "The fee paid for the placement course on 2026-0\n8-07 was 3400 INR, according to Transactions_Unique_DOCX.docx."
+    },
+    {
+      "rule": "General Knowledge Fallback Disabled",
+      "test": "FIFA World Cup 2022 winner",
+      "result": "PASS",
+      "evidence": "I couldn't find information about Who won the FIFA World Cup in 2022 in your uploaded documents."
+    },
+    {
+      "rule": "Concise Dynamic No-Info Message",
+      "test": "Absent subject 'scuba diving lessons'",
+      "result": "PASS",
+      "evidence": "I couldn't find information about scuba diving lessons in your uploaded documents."
+    },
+    {
+      "rule": "Partial Information Identification",
+      "test": "Cloud storage (present) + flight to London (absent)",
+      "result": "PASS",
+      "evidence": "Based on your uploaded documents, the Cloud storage plan was 299 (source: `Transactions_Unique_PDF.pdf`, page 1). \n\nI couldn't find information about the flight ticket to London in your uploaded documents."
+    },
+    {
+      "rule": "No Retrieved Context Behaviour",
+      "test": "Direct generation without context",
+      "result": "PASS",
+      "evidence": "I couldn't find information about the yacht rental cost in your uploaded documents."
+    },
+    {
+      "rule": "Retrieval Error Safe Fallback",
+      "test": "ChromaDB connection exception simulation",
+      "result": "PASS",
+      "evidence": "Unable to retrieve information from your documents at this time. Please check your document connection."
+    }
+  ],
+  "retrieval_tests": [
+    {
+      "type": "Exact Fact",
+      "question": "What was the amount received for the coding contest prize?",
+      "relevant_chunks": 4,
+      "user_filter": "YES",
+      "context_reached_llm": "4 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on the uploaded document `Transactions_Unique_DOCX.docx`, the amount received for the coding contest prize is 5000 INR (recorded on 20"
+    },
+    {
+      "type": "Paraphrased Question",
+      "question": "What was spent on buying athletic footwear?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on your uploaded documents, here is the recorded entry for athletic footwear (described as \"Sports shoes\"):\n\n* **Date:** 2026-06-05\n* "
+    },
+    {
+      "type": "Numerical Information",
+      "question": "What was the fee paid for the placement course in August 2026?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on the retrieved FinSight data, the fee paid for the placement course on 2026-08-07 was 3400 (Source: Transactions_Unique_DOCX.docx)."
+    },
+    {
+      "type": "Date Information",
+      "question": "When was the dental appointment and how much did it cost?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on the retrieved documents, the dental appointment took place on 2026-08-19 and cost 2400 (Transactions_Unique_PDF.pdf, page 1)."
+    },
+    {
+      "type": "Multiple Relevant Chunks",
+      "question": "What were the internship stipends received between May and September 2026?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on the retrieved FinSight data, the internship stipends received between May and September 2026 are:\n\n* 2026-05-08 | Internship stipen"
+    },
+    {
+      "type": "Duplicate Chunks Filtering",
+      "question": "How much was paid for hostel fee in February 2026?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "Based on the retrieved document `Transactions_Unique_DOCX.docx` (page 0), the amount paid for hostel fee in February 2026 was 8500 INR (reco"
+    },
+    {
+      "type": "Missing Information",
+      "question": "What was the amount paid for car insurance in 2026?",
+      "relevant_chunks": 6,
+      "user_filter": "YES",
+      "context_reached_llm": "6 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "I couldn't find information about car insurance in your uploaded documents."
+    },
+    {
+      "type": "Irrelevant Question",
+      "question": "What is the capital of Australia?",
+      "relevant_chunks": 0,
+      "user_filter": "YES",
+      "context_reached_llm": "0 chunks",
+      "answer_grounded": "YES",
+      "result": "PASS",
+      "answer_preview": "I couldn't find information about the capital of Australia in your uploaded documents."
+    }
+  ]
+}

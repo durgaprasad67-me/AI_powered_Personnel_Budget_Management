@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     chroma_persist_directory: str = "./chroma_db"
     chroma_collection_name: str = "finsight_knowledge"
     rag_max_chunks: int = 2000
-    rag_top_k: int = 4
-    rag_min_score: float = Field(default=0.60, ge=0.0, le=1.0)
+    rag_top_k: int = 6
+    rag_min_score: float = Field(default=0.55, ge=0.0, le=1.0)
     rag_chunk_size: int = 1000
     rag_chunk_overlap: int = 150
     rag_context_max_chars: int = Field(default=12000, ge=1000, le=100000)
@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     category_max_length: int = Field(default=30, ge=2)
     description_max_length: int = Field(default=200, ge=1)
     duplicate_window_seconds: float = Field(default=5.0, ge=0.5)
+    duplicate_allowed_count: int = Field(default=2, ge=0)
+    duplicate_confirm_ratio: float = Field(default=0.50, ge=0.0, le=1.0)
 
     @field_validator("gemini_api_keys", mode="before")
     @classmethod
@@ -73,6 +75,15 @@ class Settings(BaseSettings):
             value = value.strip()
             return value or None
         return value
+
+    @field_validator("chroma_persist_directory", mode="after")
+    @classmethod
+    def resolve_chroma_persist_directory(cls, value: str) -> str:
+        path = Path(value)
+        if not path.is_absolute():
+            backend_dir = Path(__file__).resolve().parents[2]
+            return str((backend_dir / path).resolve())
+        return str(path.resolve())
 
     def configured_gemini_keys(self) -> list[SecretStr]:
         numbered = [

@@ -8,11 +8,14 @@ from pydantic import (
     model_validator,
 )
 
+from app.domain.transaction_types import CASH_IN_TYPES
 from app.schemas.types import (
     Amount,
     Category,
     PlanDate,
 )
+
+INFLOW_CATEGORIES = {"salary", "freelance", "interest", "refund"}
 
 BudgetPeriod = Literal[
     "weekly",
@@ -24,13 +27,9 @@ BudgetPeriod = Literal[
 BudgetTransactionType = Literal[
     "all",
     "expense",
-    "income",
     "investment",
-    "investment_return",
-    "loan_taken",
     "loan_repaid",
     "loan_given",
-    "loan_collected",
 ]
 
 
@@ -50,10 +49,18 @@ class BudgetCreate(BaseModel):
     end_date: PlanDate | None = None
 
     @model_validator(mode="after")
-    def validate_budget_dates(self):
+    def validate_budget_rules(self):
         if self.end_date is not None and self.end_date < self.start_date:
             raise ValueError("end_date must be on or after start_date.")
-
+        if self.transaction_type in CASH_IN_TYPES:
+            raise ValueError(
+                f"Budgets cannot be created for cash inflow types ('{self.transaction_type}'). "
+                "Budgets only apply to cash outflow types (expense, investment, loan_repaid, loan_given, all)."
+            )
+        if self.category and self.category.lower() in INFLOW_CATEGORIES:
+            raise ValueError(
+                f"'{self.category}' is a cash inflow category. Budgets can only be set for cash outflow categories."
+            )
         return self
 
 
@@ -72,6 +79,21 @@ class BudgetUpdate(BaseModel):
     amount: Amount | None = None
     start_date: PlanDate | None = None
     end_date: PlanDate | None = None
+
+    @model_validator(mode="after")
+    def validate_budget_rules(self):
+        if self.end_date is not None and self.start_date is not None and self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date.")
+        if self.transaction_type is not None and self.transaction_type in CASH_IN_TYPES:
+            raise ValueError(
+                f"Budgets cannot be created for cash inflow types ('{self.transaction_type}'). "
+                "Budgets only apply to cash outflow types (expense, investment, loan_repaid, loan_given, all)."
+            )
+        if self.category is not None and self.category.lower() in INFLOW_CATEGORIES:
+            raise ValueError(
+                f"'{self.category}' is a cash inflow category. Budgets can only be set for cash outflow categories."
+            )
+        return self
 
 
 # BUDGET RESPONSE

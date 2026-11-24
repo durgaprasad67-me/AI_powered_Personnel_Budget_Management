@@ -29,11 +29,12 @@ def serialize_budget(document: dict[str, Any]) -> dict[str, Any]:
 
 
 def budget_category_values(category: str | None) -> list[str] | None:
-    if category == "investment return":
-        return ["investment", "investment return"]
-    if category == "loan return":
-        return ["loan", "loan return"]
-    return [category] if category else None
+    if not category:
+        return None
+    val = category.strip().lower()
+    if val in ("", "all", "all categories"):
+        return None
+    return [val]
 
 
 _category_values = budget_category_values
@@ -190,11 +191,22 @@ class BudgetRepository:
         }
         if transaction_type == "all":
             query["transaction_type"] = {"$in": list(CASH_OUT_TYPES)}
-        else:
+        elif transaction_type in CASH_OUT_TYPES:
             query["transaction_type"] = transaction_type
-        category_values = _category_values(category)
+        else:
+            query["transaction_type"] = {"$in": []}
+        clean_category = category.strip().lower() if category else None
+        category_values = _category_values(clean_category)
         if category_values:
-            query["category"] = {"$in": category_values}
+            query["category"] = {
+                "$in": list(
+                    set(
+                        category_values
+                        + [c.title() for c in category_values]
+                        + [c.upper() for c in category_values]
+                    )
+                )
+            }
         if exclude_transaction_id is not None:
             query["_id"] = {"$ne": exclude_transaction_id}
 
@@ -232,7 +244,7 @@ class BudgetRepository:
         month_name = dt.strftime("%B %Y")
 
         # Cash inflows do not follow budget rules
-        if transaction_type in CASH_IN_TYPES:
+        if transaction_type in CASH_IN_TYPES or transaction_type not in CASH_OUT_TYPES:
             return {
                 "has_budget": False,
                 "month": month_name,
@@ -244,6 +256,7 @@ class BudgetRepository:
             }
 
         matching_budgets: list[dict[str, Any]] = []
+        clean_category = category.strip().lower() if category else None
         async for doc in self.budgets.find({}):
             b = serialize_budget(doc)
             b_start = b["start_date"]
@@ -256,7 +269,7 @@ class BudgetRepository:
             if b_type != "all" and b_type != transaction_type:
                 continue
             cat_vals = _category_values(b.get("category"))
-            if cat_vals and (not category or category not in cat_vals):
+            if cat_vals and (not clean_category or clean_category not in cat_vals):
                 continue
             matching_budgets.append(b)
 
@@ -330,9 +343,10 @@ class BudgetRepository:
         from app.domain.transaction_types import CASH_IN_TYPES, CASH_OUT_TYPES
 
         # Cash inflows do not follow budget rules
-        if transaction_type in CASH_IN_TYPES:
+        if transaction_type in CASH_IN_TYPES or transaction_type not in CASH_OUT_TYPES:
             return []
 
+        clean_category = category.strip().lower() if category else ""
         budgets = [serialize_budget(item) async for item in self.budgets.find({})]
         violations = []
         for budget in budgets:
@@ -344,7 +358,7 @@ class BudgetRepository:
             if not (start_date <= date <= end_date):
                 continue
             category_values = _category_values(budget.get("category"))
-            if category_values and category not in category_values:
+            if category_values and clean_category not in category_values:
                 continue
             if budget_type != "all" and budget_type != transaction_type:
                 continue
@@ -354,7 +368,15 @@ class BudgetRepository:
             }
             budget_category_values = _category_values(budget.get("category"))
             if budget_category_values:
-                query["category"] = {"$in": budget_category_values}
+                query["category"] = {
+                    "$in": list(
+                        set(
+                            budget_category_values
+                            + [c.title() for c in budget_category_values]
+                            + [c.upper() for c in budget_category_values]
+                        )
+                    )
+                }
             if budget_type == "all":
                 query["transaction_type"] = {"$in": list(CASH_OUT_TYPES)}
             else:
@@ -387,9 +409,10 @@ class BudgetRepository:
                         continue
                 elif staged_type != budget_type:
                     continue
+                staged_cat = (staged_category or "").strip().lower()
                 if (
                     budget_category_values
-                    and staged_category not in budget_category_values
+                    and staged_cat not in budget_category_values
                 ):
                     continue
                 current += float(staged.get("amount", 0))

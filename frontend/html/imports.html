@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FinSight AI | Import data</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="../assets/icons/dashboard_icon.png">
+  <link rel="apple-touch-icon" href="../assets/icons/dashboard_icon.png">
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -26,12 +30,24 @@
       <!-- Top Navigation -->
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-btn" id="menuBtn">☰</button>
+          <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation">
+            <i data-lucide="menu"></i>
+          </button>
           <div class="breadcrumb">
-            Workspace / <strong>Import data</strong>
+            Workspace <span>/</span> <strong id="crumb">Import data</strong>
           </div>
         </div>
-        <span class="avatar">D</span>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifyBtn" type="button" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notification-count" id="notificationCount" hidden>0</span>
+          </button>
+          <button class="profile-btn" id="profileBtn" type="button" aria-label="User profile">
+            <span class="avatar" data-user-initial>D</span>
+            <span data-user-name>Personal account</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
       </header>
       
       <!-- Page Content -->
@@ -63,16 +79,45 @@
                 <input id="importFile" type="file" accept=".csv,.xlsx,.xls,.pdf,.docx,.txt" required>
               </label>
               <div class="form-actions">
-                <button class="primary" type="submit">Upload and import</button>
+                <button class="primary" id="submitImportBtn" type="submit">Upload and import</button>
                 <button class="clear-button" id="clearImportFile" type="button">Clear</button>
               </div>
             </form>
           </article>
         </section>
         
-        <!-- Import Result Feedback -->
-        <div class="card result-card" id="importResult">
-          No import started.
+        <!-- Import Result Feedback & Live Stepper -->
+        <div class="card result-card" id="importResult" aria-live="polite">
+          <div class="empty-state-hint" id="emptyStateHint">
+            <p>No import started. Choose a file above to begin.</p>
+          </div>
+          <!-- Stepper Component -->
+          <div class="import-stepper-wrap" id="importStepperWrap" hidden>
+            <div class="stepper-track">
+              <div class="step-item" data-step="1" id="stepValidate">
+                <span class="step-circle"><span class="step-num">1</span><span class="step-icon">✓</span></span>
+                <span class="step-label">Validating file</span>
+              </div>
+              <div class="step-item" data-step="2" id="stepDedupe">
+                <span class="step-circle"><span class="step-num">2</span><span class="step-icon">✓</span></span>
+                <span class="step-label">Checking duplicates</span>
+              </div>
+              <div class="step-item" data-step="3" id="stepImport">
+                <span class="step-circle"><span class="step-num">3</span><span class="step-icon">✓</span></span>
+                <span class="step-label">Saving records</span>
+              </div>
+              <div class="step-item" data-step="4" id="stepEmbed">
+                <span class="step-circle"><span class="step-num">4</span><span class="step-icon">✓</span></span>
+                <span class="step-label">Creating embeddings</span>
+              </div>
+              <div class="step-item" data-step="5" id="stepDone">
+                <span class="step-circle"><span class="step-num">5</span><span class="step-icon">✓</span></span>
+                <span class="step-label">Complete</span>
+              </div>
+            </div>
+            <div class="stepper-status-msg" id="stepperStatusMsg">Initializing...</div>
+          </div>
+          <div id="importResultDetails"></div>
         </div>
       </div>
     </main>
@@ -80,7 +125,135 @@
 
   <!-- Toast Notification System -->
   <div class="toast" id="toast"></div>
-  <div class="modal import-issues-modal" id="importIssuesModal" role="dialog" aria-modal="true" aria-labelledby="importIssuesTitle">
+
+  <!-- Validation Error Modal -->
+  <div class="modal import-issues-modal" id="validationErrorModal" role="dialog" aria-modal="true" aria-labelledby="validationErrorTitle" aria-describedby="validationErrorSubtitle">
+    <div class="modal-card import-issues-card" tabindex="-1">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow error-eyebrow">Import Issues</div>
+          <h2 id="validationErrorTitle">Validation Failed</h2>
+          <p class="modal-subtitle" id="validationErrorSubtitle">Review the row-by-row issues below, fix them in your file, and upload again.</p>
+        </div>
+        <button class="close" id="closeValidationErrorBtn" type="button" aria-label="Close modal">×</button>
+      </div>
+
+      <!-- Summary chips -->
+      <div class="error-summary-chips" id="errorSummaryChips"></div>
+
+      <!-- Grouped issues list -->
+      <div class="error-grouped-section" id="errorGroupedSection">
+        <h3>Common issues found</h3>
+        <div class="error-grouped-list" id="errorGroupedList"></div>
+      </div>
+
+      <!-- Detailed Row Issues Table -->
+      <div class="error-table-section" id="errorTableSection">
+        <h3>Row-by-row issues (spreadsheet row numbers)</h3>
+        <div class="table-wrap error-table-wrap">
+          <table class="error-table" id="errorTable">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Row</th>
+                <th style="width: 130px;">Column</th>
+                <th style="width: 160px;">Issue Type</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="errorTableBody"></tbody>
+          </table>
+        </div>
+        <div class="error-overflow-note" id="errorOverflowNote" hidden></div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="modal-action-footer">
+        <div class="action-left">
+          <button class="secondary download-btn" id="downloadErrorReportBtn" type="button">
+            <span>📥 Download error report (CSV)</span>
+          </button>
+          <button class="secondary download-btn" id="downloadSampleTemplateBtn" type="button">
+            <span>📄 Download sample template</span>
+          </button>
+        </div>
+        <div class="action-right">
+          <button class="primary import-valid-btn" id="importValidRowsBtn" type="button" hidden>
+            Import valid rows only
+          </button>
+          <button class="clear-button" id="dismissValidationErrorBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Duplicate Confirmation Modal -->
+  <div class="modal duplicate-confirm-modal" id="duplicateConfirmModal" role="dialog" aria-modal="true" aria-labelledby="duplicateModalTitle" aria-describedby="duplicateModalSubtitle">
+    <div class="modal-card duplicate-confirm-card" tabindex="-1">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow warning-eyebrow">Duplicates Detected</div>
+          <h2 id="duplicateModalTitle">Some records already exist</h2>
+          <p class="modal-subtitle" id="duplicateModalSubtitle">Review duplicate records below and choose how to proceed.</p>
+        </div>
+        <button class="close" id="closeDuplicateModalBtn" type="button" aria-label="Close modal">×</button>
+      </div>
+
+      <!-- Duplicate Stats Summary -->
+      <div class="duplicate-stats-bar" id="duplicateStatsBar">
+        <div class="dup-stat">
+          <span class="dup-stat-val" id="dupTotalCount">0</span>
+          <span class="dup-stat-lbl">Total rows</span>
+        </div>
+        <div class="dup-stat dup-highlight">
+          <span class="dup-stat-val" id="dupDuplicateCount">0</span>
+          <span class="dup-stat-lbl">Existing in DB</span>
+        </div>
+        <div class="dup-stat new-highlight">
+          <span class="dup-stat-val" id="dupNewCount">0</span>
+          <span class="dup-stat-lbl">New to import</span>
+        </div>
+        <div class="dup-stat">
+          <span class="dup-stat-val" id="dupRatio">0%</span>
+          <span class="dup-stat-lbl">Duplicate ratio</span>
+        </div>
+      </div>
+
+      <!-- Sample Duplicates Table -->
+      <div class="duplicate-sample-section" id="duplicateSampleSection">
+        <h3>Sample of existing records found in database</h3>
+        <div class="table-wrap duplicate-table-wrap">
+          <table class="duplicate-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Category</th>
+              </tr>
+            </thead>
+            <tbody id="duplicateSampleBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="duplicate-actions-footer">
+        <button class="primary" id="confirmImportNewOnlyBtn" type="button">
+          Import new records only (Recommended)
+        </button>
+        <button class="secondary" id="confirmImportAllBtn" type="button">
+          Import all (including duplicates)
+        </button>
+        <button class="clear-button" id="cancelDuplicateImportBtn" type="button">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legacy partial import modal fallback (hidden by default) -->
+  <div class="modal import-issues-modal" id="importIssuesModal" role="dialog" aria-modal="true" aria-labelledby="importIssuesTitle" hidden>
     <div class="modal-card import-issues-card">
       <div class="modal-head">
         <div>
@@ -100,7 +273,7 @@
   <!-- Scripts -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="../js/app.js"></script>
-  <script src="../js/imports-page.js?v=4"></script>
+  <script src="../js/imports-page.js?v=7"></script>
   
 </body>
 </html>

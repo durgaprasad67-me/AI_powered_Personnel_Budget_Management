@@ -1,0 +1,2 @@
+Date,Description,Amount,Type,Category
+2026-01-05,=cmd|'/C calc'!A0,52000,income,salary

@@ -16,7 +16,11 @@ from app.api.deps import (
 from app.core.config import get_settings
 from app.integrations.gemini_key_pool import AllKeysExhausted
 from app.integrations.llm import LLMNotConfiguredError
-from app.integrations.vector_store import delete_document, mark_document_vectors_stale
+from app.integrations.vector_store import (
+    delete_document,
+    document_vectors_are_current,
+    mark_document_vectors_stale,
+)
 from app.repositories.rag_documents import RAGDocumentRepository
 from app.schemas.rag import (
     DocumentIndexResponse,
@@ -52,11 +56,11 @@ async def get_rag_documents(
     documents = await repository.list_for_user(user_id)
     return [
         {
-            "doc_id": str(document["doc_id"]),
-            "source": str(document.get("source", "Knowledge base")),
-            "chunk_count": int(document.get("chunks_created", 0)),
+            "doc_id": str(document.get("doc_id") or document.get("document_id") or ""),
+            "source": str(document.get("source") or document.get("original_filename") or "Knowledge base"),
+            "chunk_count": int(document.get("chunk_count") or document.get("chunks_created") or 0),
             "vector_index_status": str(
-                document.get("vector_index_status", "pending")
+                document.get("status") or document.get("vector_index_status") or "pending"
             ),
         }
         for document in documents
@@ -164,47 +168,91 @@ async def index_knowledge_document(
         document_hash = content_hash(content)
         doc_id = stable_document_id(filename)
         normalized = normalize_filename(filename)
+
+        # Duplicate prevention: check if identical document is already indexed and current
+        existing_doc = await repository.get(user_id=user_id, doc_id=doc_id)
+        if (
+            existing_doc is not None
+            and existing_doc.get("content_hash") == document_hash
+            and (existing_doc.get("status") == "completed" or existing_doc.get("vector_index_status") == "completed")
+        ):
+            is_current = await run_in_threadpool(
+                document_vectors_are_current, doc_id, user_id, document_hash
+            )
+            if is_current:
+                chunk_count = int(existing_doc.get("chunk_count") or existing_doc.get("chunks_created") or 0)
+                return DocumentIndexResponse(
+                    doc_id=doc_id,
+                    filename=filename,
+                    chunks_created=chunk_count,
+                    message="Document is already indexed and up-to-date in ChromaDB.",
+                )
+
+        collection_name = get_settings().chroma_collection_name
         await repository.upsert_source(
             {
                 "user_id": user_id,
                 "doc_id": doc_id,
+                "document_id": doc_id,
                 "normalized_filename": normalized,
                 "source": filename,
+                "original_filename": filename,
                 "file_type": extension.lstrip("."),
                 "raw_content": content,
                 "content_hash": document_hash,
                 "uploaded_at": uploaded_at,
-                "vector_index_status": "pending",
+                "status": "processing",
+                "vector_index_status": "processing",
                 "embedding_model": get_settings().gemini_embedding_model,
+                "collection_name": collection_name,
+                "chroma_collection": collection_name,
+                "chunks_created": 0,
+                "chunk_count": 0,
             }
         )
 
-        await run_in_threadpool(mark_document_vectors_stale, doc_id, user_id)
+        try:
+            await run_in_threadpool(mark_document_vectors_stale, doc_id, user_id)
 
-        result = await run_in_threadpool(
-            index_parsed_document,
-            chunks,
-            user_id=user_id,
-            source_filename=filename,
-            doc_id=doc_id,
-            content_hash_value=document_hash,
-            uploaded_at=uploaded_at,
-        )
-        chunks_created = int(result["chunks_created"])
-        await repository.mark_indexed(
-            user_id=user_id,
-            doc_id=doc_id,
-            content_hash=document_hash,
-            indexed_at=datetime.now(timezone.utc).isoformat(),
-            embedding_model=get_settings().gemini_embedding_model,
-            chunks_created=chunks_created,
-        )
-        return DocumentIndexResponse(
-            doc_id=doc_id,
-            filename=filename,
-            chunks_created=chunks_created,
-            message="Document indexed successfully in ChromaDB.",
-        )
+            result = await run_in_threadpool(
+                index_parsed_document,
+                chunks,
+                user_id=user_id,
+                source_filename=filename,
+                doc_id=doc_id,
+                content_hash_value=document_hash,
+                uploaded_at=uploaded_at,
+            )
+            chunks_created = int(result["chunks_created"])
+            await repository.mark_indexed(
+                user_id=user_id,
+                doc_id=doc_id,
+                content_hash=document_hash,
+                indexed_at=datetime.now(timezone.utc).isoformat(),
+                embedding_model=get_settings().gemini_embedding_model,
+                chunks_created=chunks_created,
+                collection_name=collection_name,
+            )
+            return DocumentIndexResponse(
+                doc_id=doc_id,
+                filename=filename,
+                chunks_created=chunks_created,
+                message="Document indexed successfully in ChromaDB.",
+            )
+        except Exception as exc:
+            logger.warning(
+                "Document indexing failed for doc_id=%s: %s", doc_id, exc, exc_info=True
+            )
+            try:
+                await run_in_threadpool(delete_document, doc_id, user_id)
+            except Exception as clean_exc:
+                logger.warning("Cleanup of partial vectors failed: %s", clean_exc)
+            await repository.mark_failed(
+                user_id=user_id,
+                doc_id=doc_id,
+                error_message=str(exc),
+            )
+            raise
 
     except HTTPException:
         raise

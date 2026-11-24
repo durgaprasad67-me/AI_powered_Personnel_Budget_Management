@@ -12,6 +12,8 @@ from app.core.config import get_settings
 from app.core.user_context import DEFAULT_CURRENT_USER_ID
 from app.integrations.vector_store import (
     delete_transaction,
+    delete_transactions_by_import_id,
+    get_existing_content_hashes,
     mark_transaction_vector_stale,
     upsert_transaction_documents,
 )
@@ -76,6 +78,10 @@ def _transaction_document(
         "content_hash": content_hash,
         "embedding_model": get_settings().gemini_embedding_model,
     }
+    if transaction.get("import_id"):
+        metadata["import_id"] = str(transaction["import_id"])
+    if transaction.get("fingerprint"):
+        metadata["fingerprint"] = str(transaction["fingerprint"])
     return Document(page_content=text, metadata=metadata), content_hash, source_id
 
 
@@ -86,6 +92,7 @@ def index_transactions_sync(
     """Upsert a batch of Mongo transactions into Chroma."""
     documents: list[Document] = []
     state: list[tuple[str, str]] = []
+    content_hashes: list[str] = []
     for transaction in transactions:
         document, content_hash, source_id = _transaction_document(
             transaction,
@@ -93,9 +100,17 @@ def index_transactions_sync(
         )
         documents.append(document)
         state.append((source_id, content_hash))
+        content_hashes.append(content_hash)
 
-    if documents:
-        upsert_transaction_documents(documents, user_id=user_id)
+    # Check for chunks whose content_hash is already indexed in Chroma
+    existing_hashes = get_existing_content_hashes(user_id, content_hashes)
+    docs_to_index = [
+        doc for doc in documents
+        if doc.metadata.get("content_hash") not in existing_hashes
+    ]
+
+    if docs_to_index:
+        upsert_transaction_documents(docs_to_index, user_id=user_id)
     return state
 
 
@@ -136,6 +151,16 @@ async def sync_transactions_best_effort(
             "Transaction vector indexing failed; Mongo write was retained",
             extra={"error_type": type(exc).__name__},
         )
+        # Batch rollback: delete individual transaction IDs and purge by import_id
+        import_ids = {str(t["import_id"]) for t in transactions if t.get("import_id")}
+        for imp_id in import_ids:
+            try:
+                await asyncio.to_thread(delete_transactions_by_import_id, imp_id, user_id)
+            except Exception as cleanup_exc:
+                logger.warning(
+                    "Could not remove import batch vectors during rollback",
+                    extra={"error_type": type(cleanup_exc).__name__},
+                )
         for transaction in transactions:
             transaction_id = transaction.get("id", transaction.get("_id"))
             if transaction_id is None:

@@ -1,21 +1,45 @@
-﻿Date,Description,Amount,Type,Category
-2026-01-05,Monthly salary,52000,income,salary
-2026-01-11,Apartment rent,14500,expense,housing
-2026-02-03,Freelance website work,8200,income,freelance
-2026-02-17,Vegetable market,1350,expense,food
-2026-03-08,Annual insurance premium,9600,expense,insurance
-2026-03-22,Interest earned,740,income,interest
-2026-04-04,Bus pass,1200,expense,transport
-2026-04-19,Laptop repair,3400,expense,electronics
-2026-05-06,Monthly salary,54000,income,salary
-2026-05-25,Books purchase,1850,expense,education
-2026-06-12,Consulting payment,11500,income,freelance
-2026-06-28,Water bill,620,expense,utilities
-2026-07-02,Gym membership,2200,expense,fitness
-2026-07-16,Cashback received,430,income,cashback
-2026-08-09,Home appliance,7800,expense,shopping
-2026-08-24,Medical checkup,2100,expense,healthcare
-2026-09-05,Monthly salary,56000,income,salary
-2026-09-18,Train ticket,2450,expense,travel
-2026-10-07,Photography gig,6500,income,freelance
-2026-10-20,Internet subscription,999,expense,utilities
+date,description,amount,type,category
+2026-01-03,Monthly salary credit,65000,income,salary
+2026-01-08,House rent payment,16000,expense,housing
+2026-01-14,Amazon grocery order,2450,expense,food
+2026-01-21,Logo design project,8500,income,freelance
+2026-02-02,Electricity bill payment,1750,expense,utilities
+2026-02-09,Mutual fund dividend,1850,income,investment
+2026-02-16,Petrol filling,1800,expense,transport
+2026-02-25,Mobile phone recharge,399,expense,utilities
+2026-03-04,Salary credit,65000,income,salary
+2026-03-11,Online certification course,4500,expense,education
+2026-03-19,Website development project,18000,income,freelance
+2026-03-27,Restaurant dinner,1650,expense,food
+2026-04-05,Health insurance premium,5200,expense,insurance
+2026-04-12,Interest from savings account,950,income,interest
+2026-04-20,Train journey booking,2350,expense,travel
+2026-04-26,Freelance consulting payment,12000,income,freelance
+2026-05-03,Monthly salary credit,68000,income,salary
+2026-05-10,Laptop accessories purchase,3200,expense,electronics
+2026-05-18,Electricity and water bills,2100,expense,utilities
+2026-05-26,Photography assignment,7500,income,freelance
+2026-06-06,Supermarket shopping,3800,expense,food
+2026-06-14,Stock investment purchase,10000,investment,investment
+2026-06-22,Online tutoring income,6500,income,freelance
+2026-06-29,Gym annual membership,4800,expense,fitness
+2026-07-04,Monthly salary credit,68000,income,salary
+2026-07-12,Car servicing,5600,expense,transport
+2026-07-19,Fixed deposit interest,1450,income,interest
+2026-07-27,Movie and entertainment,1250,expense,entertainment
+2026-08-05,Freelance app development,22000,income,freelance
+2026-08-13,Medical consultation,1800,expense,healthcare
+2026-08-21,New office furniture,9500,expense,shopping
+2026-08-28,Investment redemption return,11500,investment_return,investment
+2026-09-03,Monthly salary credit,70000,income,salary
+2026-09-09,Apartment maintenance,2500,expense,housing
+2026-09-17,Flight ticket booking,8500,expense,travel
+2026-09-25,Technical training payment,9000,income,freelance
+2026-10-04,Freelance dashboard development,14500,income,freelance
+2026-10-12,Internet annual subscription,2999,expense,utilities
+2026-10-20,Clothing purchase,4200,expense,shopping
+2026-10-28,Monthly salary credit,70000,income,salary
+2026-11-03,Home appliance purchase,7800,expense,shopping
+2026-11-09,Freelance API integration,11000,income,freelance
+2026-11-16,Doctor and pharmacy expenses,2400,expense,healthcare
+2026-11-23,Cloud computing course,3500,expense,education

@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from typing import Any
+from pydantic import BaseModel, Field
 
 
 class MessageResponse(BaseModel):
@@ -22,3 +23,4 @@ class ImportResult(BaseModel):
     total_records: int
     imported_records: int
     transactions: list[str]
+    records: list[dict[str, Any]] = Field(default_factory=list)
